@@ -1917,6 +1917,7 @@ function maybeShowWeeklyRank() {
   window._auth = { auth, signOut: () => signOut(auth) };
 
   let currentUser = null;
+  window._leaderboard = {};
 
   // Auth
   window.doLogin = async function() {
@@ -1953,7 +1954,7 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // Control + Lịch sử + Điểm
+  // Control
   window.control = async function(action) {
     try {
       await set(ref(db, 'shared/controls'), { 
@@ -1962,7 +1963,6 @@ function maybeShowWeeklyRank() {
         updatedBy: currentUser?.name || 'Guest' 
       });
 
-      // Lưu lịch sử
       const newHistory = push(ref(db, 'shared/history'));
       await set(newHistory, {
         action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'AUTO',
@@ -1970,7 +1970,6 @@ function maybeShowWeeklyRank() {
         timestamp: Date.now()
       });
 
-      // Cộng điểm
       if (action === 'on' && currentUser?.name) {
         const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
         const snap = await get(lbRef);
@@ -2017,6 +2016,7 @@ function maybeShowWeeklyRank() {
     input.value = '';
   };
 
+  // Render functions
   function renderHistory(history) {
     const container = document.getElementById('history-list');
     container.innerHTML = '';
@@ -2029,70 +2029,46 @@ function maybeShowWeeklyRank() {
     });
   }
 
- function renderComments(comments) {
-  const container = document.getElementById('comments');
-  container.innerHTML = '';
-  if (!comments) {
-    container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
-    return;
+  function renderComments(comments) {
+    const container = document.getElementById('comments');
+    container.innerHTML = '';
+    if (!comments) return container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
+    const sorted = Object.keys(comments).map(k => ({...comments[k], key: k})).sort((a,b) => b.timestamp - a.timestamp);
+    sorted.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'comment-item';
+      div.innerHTML = `<div class="comment-author">${c.user || 'Anonymous'}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>`;
+      container.appendChild(div);
+    });
   }
 
-  // Lấy tất cả comment và sắp xếp theo thời gian mới nhất lên trên
-  const sortedComments = Object.keys(comments)
-    .map(key => ({ key, ...comments[key] }))
-    .sort((a, b) => b.timestamp - a.timestamp);   // Mới nhất lên đầu
-
-  sortedComments.forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'comment-item';
-    div.innerHTML = `
-      <div class="comment-author">${c.user || 'Anonymous'}</div>
-      <div class="comment-text">${c.text}</div>
-      <div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>
-    `;
-    container.appendChild(div);
-  });
-}
-// Render bảng xếp hạng
-function renderLeaderboard(leaderboard) {
-  const container = document.getElementById('rank-list'); // ID của danh sách rank
-  if (!container) return;
-
-  container.innerHTML = '';
-  if (!leaderboard) {
-    container.innerHTML = '<div class="empty">Chưa có ai trong bảng xếp hạng</div>';
-    return;
+  function renderLeaderboard(leaderboard) {
+    window._leaderboard = leaderboard || {};
+    const container = document.getElementById('rank-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!leaderboard) return container.innerHTML = '<div class="empty">Chưa có dữ liệu</div>';
+    const sorted = Object.entries(leaderboard).sort((a,b) => b[1] - a[1]).slice(0,5);
+    sorted.forEach(([name, score], i) => {
+      const div = document.createElement('div');
+      div.className = 'rank-item';
+      div.innerHTML = `<div class="rank-medal">${i===0?'👑':i===1?'🥈':i===2?'🥉':(i+1)}</div><div class="rank-name">${name}</div><div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>`;
+      container.appendChild(div);
+    });
   }
 
-  // Sắp xếp theo điểm giảm dần
-  const sorted = Object.entries(leaderboard)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5); // Top 5
+  // Realtime
+  function setupRealtime() {
+    onValue(ref(db, 'shared/controls'), snap => {
+      const data = snap.val();
+      if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+    });
+    onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
+    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+    onValue(ref(db, 'shared/leaderboard'), snap => renderLeaderboard(snap.val()));
+  }
 
-  sorted.forEach(([name, score], index) => {
-    const div = document.createElement('div');
-    div.className = 'rank-item';
-    div.innerHTML = `
-      <div class="rank-medal">${index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index+1)}</div>
-      <div class="rank-name">${name}</div>
-      <div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-// Cập nhật setupRealtime để thêm leaderboard
-function setupRealtime() {
-  onValue(ref(db, 'shared/controls'), snap => {
-    const data = snap.val();
-    if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-  });
-
-  onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
-  onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
-  onValue(ref(db, 'shared/leaderboard'), snap => renderLeaderboard(snap.val())); // ← Thêm dòng này
-}
-
+  // Auth state
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
