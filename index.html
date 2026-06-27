@@ -1918,7 +1918,7 @@ function maybeShowWeeklyRank() {
 
   let currentUser = null;
 
-  // Auth functions
+  // Auth
   window.doLogin = async function() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
@@ -1953,7 +1953,7 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // Control
+  // Control + Điểm
   window.control = async function(action) {
     try {
       await set(ref(db, 'shared/controls'), { 
@@ -1975,7 +1975,7 @@ function maybeShowWeeklyRank() {
         await set(lbRef, (snap.exists() ? snap.val() : 0) + 100);
       }
 
-      // UI update
+      // UI
       document.getElementById('btn-on').classList.toggle('active-on', action === 'on');
       document.getElementById('btn-off').classList.toggle('active-off', action === 'off');
       document.getElementById('btn-auto').classList.toggle('active-auto', action === 'auto');
@@ -2002,17 +2002,18 @@ function maybeShowWeeklyRank() {
     } catch(e) { console.error(e); }
   };
 
-  function renderHistory(history) {
-    const container = document.getElementById('history-list');
-    container.innerHTML = '';
-    if (!history) return container.innerHTML = '<div class="empty">Chưa có lịch sử</div>';
-    Object.entries(history).slice(-5).reverse().forEach(([_, h]) => {
-      const div = document.createElement('div');
-      div.className = 'h-item';
-      div.innerHTML = `<div><span>${h.action}</span><div class="h-item-user">bởi ${h.user}</div></div><div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>`;
-      container.appendChild(div);
+  window.sendComment = async function() {
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const newRef = push(ref(db, 'shared/comments'));
+    await set(newRef, {
+      text: text,
+      user: currentUser?.name || 'Anonymous',
+      timestamp: Date.now()
     });
-  }
+    input.value = '';
+  };
 
   function renderComments(comments) {
     const container = document.getElementById('comments');
@@ -2028,14 +2029,8 @@ function maybeShowWeeklyRank() {
   }
 
   function setupRealtime() {
-    onValue(ref(db, 'shared/controls'), snap => {
-      const data = snap.val();
-      if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-    });
-
-    onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
     onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
-    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard realtime:", snap.val()));
+    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard:", snap.val()));
   }
 
   onAuthStateChanged(auth, user => {
