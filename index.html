@@ -1953,7 +1953,7 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // Control chính
+  // Control
   window.control = async function(action) {
     try {
       await set(ref(db, 'shared/controls'), { 
@@ -1970,14 +1970,14 @@ function maybeShowWeeklyRank() {
         timestamp: Date.now()
       });
 
-      // Cộng điểm khi bật đèn
+      // Cộng điểm
       if (action === 'on' && currentUser?.name) {
         const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
         const snap = await get(lbRef);
         await set(lbRef, (snap.exists() ? snap.val() : 0) + 100);
       }
 
-      // Cập nhật UI
+      // UI
       document.getElementById('btn-on').classList.toggle('active-on', action === 'on');
       document.getElementById('btn-off').classList.toggle('active-off', action === 'off');
       document.getElementById('btn-auto').classList.toggle('active-auto', action === 'auto');
