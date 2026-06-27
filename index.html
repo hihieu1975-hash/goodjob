@@ -1894,7 +1894,7 @@ function maybeShowWeeklyRank() {
 </div> <!-- /#main-app -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, push, onValue, update, remove }
+  import { getDatabase, ref, set, get, push, onValue }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1913,29 +1913,20 @@ function maybeShowWeeklyRank() {
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  window._fb = { ref, set, get, push, onValue, update, remove, db };
+  window._fb = { ref, set, get, push, onValue, db };
   window._auth = { auth, signOut: () => signOut(auth) };
 
   let currentUser = null;
 
-  // ==================== AUTH ====================
+  // Auth
   window.doLogin = async function() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
-    if (!email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch(e) {
-      const msgs = {
-        'auth/user-not-found': 'Email không tồn tại.',
-        'auth/wrong-password': 'Sai mật khẩu.',
-        'auth/invalid-email': 'Email không hợp lệ.',
-        'auth/invalid-credential': 'Email hoặc mật khẩu không đúng.',
-      };
-      errEl.textContent = msgs[e.code] || 'Đăng nhập thất bại: ' + e.message;
-    }
+    if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
+    try { await signInWithEmailAndPassword(auth, email, password); } 
+    catch(e) { errEl.textContent = e.message; }
   };
 
   window.doRegister = async function() {
@@ -1944,19 +1935,12 @@ function maybeShowWeeklyRank() {
     const password = document.getElementById('reg-password').value;
     const errEl = document.getElementById('reg-error');
     errEl.textContent = '';
-    if (!name || !email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
-    if (password.length < 6) { errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.'; return; }
+    if (!name || !email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
+    if (password.length < 6) return errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.';
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
-    } catch(e) {
-      const msgs = {
-        'auth/email-already-in-use': 'Email này đã được đăng ký.',
-        'auth/invalid-email': 'Email không hợp lệ.',
-        'auth/weak-password': 'Mật khẩu quá yếu.',
-      };
-      errEl.textContent = msgs[e.code] || 'Đăng ký thất bại: ' + e.message;
-    }
+    } catch(e) { errEl.textContent = e.message; }
   };
 
   window.switchTab = function(tab) {
@@ -1969,120 +1953,62 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // ==================== CONTROL + HISTORY + UI ====================
-  // ==================== CONTROL + ĐIỂM + REALTIME ====================
-window.control = async function(action) {
-  try {
-    await set(ref(db, 'shared/controls'), {
-      state: action,
-      timestamp: Date.now(),
-      updatedBy: currentUser?.name || 'Guest'
-    });
+  // Control + Điểm + Lịch sử
+  window.control = async function(action) {
+    try {
+      await set(ref(db, 'shared/controls'), { state: action, timestamp: Date.now(), updatedBy: currentUser?.name || 'Guest' });
 
-    // Lưu lịch sử
-    const historyRef = ref(db, 'shared/history');
-    const newEntry = push(historyRef);
-    await set(newEntry, {
-      action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
-      user: currentUser?.name || 'Guest',
-      timestamp: Date.now()
-    });
+      // Lưu lịch sử
+      const newHistory = push(ref(db, 'shared/history'));
+      await set(newHistory, {
+        action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'AUTO',
+        user: currentUser?.name || 'Guest',
+        timestamp: Date.now()
+      });
 
-    // Cộng điểm khi bật đèn
-    if (action === 'on' && currentUser?.name) {
-      const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
-      const snap = await get(lbRef);
-      const currentScore = snap.exists() ? snap.val() : 0;
-      await set(lbRef, currentScore + 100);
-      console.log(`+100 điểm cho ${currentUser.name}`);
-    }
+      // Cộng điểm khi bật đèn
+      if (action === 'on' && currentUser?.name) {
+        const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
+        const snap = await get(lbRef);
+        await set(lbRef, (snap.exists() ? snap.val() : 0) + 100);
+      }
 
-    // Cập nhật UI
-    const btnOn = document.getElementById('btn-on');
-    const btnOff = document.getElementById('btn-off');
-    const btnAuto = document.getElementById('btn-auto');
-    const statusText = document.getElementById('status-text');
-    const statusDot = document.getElementById('status-dot');
-    const schedulePanel = document.getElementById('schedule-panel');
-    const scheduleHint = document.getElementById('schedule-hint');
+      // Cập nhật UI
+      document.getElementById('btn-on').classList.toggle('active-on', action === 'on');
+      document.getElementById('btn-off').classList.toggle('active-off', action === 'off');
+      document.getElementById('btn-auto').classList.toggle('active-auto', action === 'auto');
 
-    btnOn.classList.toggle('active-on', action === 'on');
-    btnOff.classList.toggle('active-off', action === 'off');
-    btnAuto.classList.toggle('active-auto', action === 'auto');
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+      if (action === 'on') {
+        statusText.textContent = 'Đèn đang bật';
+        statusDot.className = 'dot dot-on';
+      } else if (action === 'off') {
+        statusText.textContent = 'Đèn đang tắt';
+        statusDot.className = 'dot dot-off';
+      } else if (action === 'auto') {
+        statusText.textContent = 'Chế độ AUTO';
+        statusDot.className = 'dot dot-auto';
+        document.getElementById('schedule-panel').style.display = 'block';
+        document.getElementById('schedule-hint').style.display = 'none';
+      }
 
-    if (action === 'on') {
-      statusText.textContent = 'Đèn đang bật';
-      statusDot.className = 'dot dot-on';
-    } else if (action === 'off') {
-      statusText.textContent = 'Đèn đang tắt';
-      statusDot.className = 'dot dot-off';
-    } else if (action === 'auto') {
-      statusText.textContent = 'Chế độ AUTO';
-      statusDot.className = 'dot dot-auto';
-      schedulePanel.style.display = 'block';
-      scheduleHint.style.display = 'none';
-    }
+      if (action !== 'auto') {
+        document.getElementById('schedule-panel').style.display = 'none';
+        document.getElementById('schedule-hint').style.display = 'flex';
+      }
+    } catch(e) { console.error(e); }
+  };
 
-    if (action !== 'auto') {
-      schedulePanel.style.display = 'none';
-      scheduleHint.style.display = 'flex';
-    }
-  } catch(e) {
-    console.error("Lỗi control:", e);
-  }
-};
-
-// Render leaderboard (nếu có modal)
-function renderLeaderboard() {
-  // Nếu bạn có modal weekly rank, có thể cập nhật ở đây
-  console.log("Leaderboard updated");
-}
-
-// Setup realtime đầy đủ
-function setupRealtime() {
-  // Controls
-  onValue(ref(db, 'shared/controls'), (snap) => {
-    const data = snap.val();
-    if (data) {
-      document.getElementById('status-text').textContent = 
-        data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-    }
-  });
-
-  // History
-  onValue(ref(db, 'shared/history'), (snap) => renderHistory(snap.val()));
-
-  // Comments (Nhật ký)
-  onValue(ref(db, 'shared/comments'), (snap) => {
-    renderComments(snap.val());
-  });
-
-  // Leaderboard (nếu cần realtime)
-  onValue(ref(db, 'shared/leaderboard'), (snap) => {
-    console.log("Bảng xếp hạng realtime:", snap.val());
-    // Có thể cập nhật UI bảng xếp hạng nếu bạn có
-  });
-}
-  // Render lịch sử
+  // Render functions
   function renderHistory(history) {
     const container = document.getElementById('history-list');
     container.innerHTML = '';
-    if (!history) {
-      container.innerHTML = '<div class="empty">Chưa có lịch sử</div>';
-      return;
-    }
-    // Hiển thị 5 mục mới nhất
-    const entries = Object.entries(history).slice(-5).reverse();
-    entries.forEach(([key, h]) => {
+    if (!history) return container.innerHTML = '<div class="empty">Chưa có lịch sử</div>';
+    Object.entries(history).slice(-5).reverse().forEach(([_, h]) => {
       const div = document.createElement('div');
       div.className = 'h-item';
-      div.innerHTML = `
-        <div>
-          <span>${h.action}</span>
-          <div class="h-item-user">bởi ${h.user}</div>
-        </div>
-        <div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>
-      `;
+      div.innerHTML = `<div><span>${h.action}</span><div class="h-item-user">bởi ${h.user}</div></div><div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>`;
       container.appendChild(div);
     });
   }
@@ -2090,34 +2016,25 @@ function setupRealtime() {
   function renderComments(comments) {
     const container = document.getElementById('comments');
     container.innerHTML = '';
-    if (!comments) {
-      container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
-      return;
-    }
+    if (!comments) return container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
     Object.keys(comments).forEach(key => {
       const c = comments[key];
       const div = document.createElement('div');
       div.className = 'comment-item';
-      div.innerHTML = `
-        <div class="comment-author">${c.user || 'Anonymous'}</div>
-        <div class="comment-text">${c.text}</div>
-        <div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>
-      `;
+      div.innerHTML = `<div class="comment-author">${c.user || 'Anonymous'}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>`;
       container.appendChild(div);
     });
   }
 
-  // Setup realtime
+  // Realtime
   function setupRealtime() {
-    onValue(ref(db, 'shared/controls'), (snap) => {
+    onValue(ref(db, 'shared/controls'), snap => {
       const data = snap.val();
-      if (data) {
-        document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-      }
+      if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
     });
-
-    onValue(ref(db, 'shared/history'), (snap) => renderHistory(snap.val()));
-    onValue(ref(db, 'shared/comments'), (snap) => renderComments(snap.val()));
+    onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
+    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard:", snap.val()));
   }
 
   // Auth state
