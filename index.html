@@ -1836,40 +1836,17 @@ function openWeeklyRank() {
     const displayName = name || '— — —';
     const dimmed = !name ? 'opacity:0.3;' : '';
 
-    return `<div style="
-        position:relative; overflow:hidden;
-        display:flex; align-items:center; gap:16px;
-        padding:14px 16px;
-        background:${t.bg};
-        border:1px solid ${t.border};
-        border-radius:18px;
-        box-shadow:${t.glow};
-        text-align:left; ${dimmed}
-      ">
-      <!-- sweep shine -->
-      <div style="pointer-events:none; position:absolute; top:-50%; left:-70%; width:40%; height:200%;
-        background:linear-gradient(105deg, transparent, ${t.sweep}, transparent);
-        animation:sweepLight 5s ease infinite;"></div>
-
-      <!-- rank number -->
+    return `<div style="position:relative; overflow:hidden; display:flex; align-items:center; gap:16px; padding:14px 16px; background:${t.bg}; border:1px solid ${t.border}; border-radius:18px; box-shadow:${t.glow}; text-align:left; ${dimmed}">
+      <div style="pointer-events:none; position:absolute; top:-50%; left:-70%; width:40%; height:200%; background:linear-gradient(105deg, transparent, ${t.sweep}, transparent); animation:sweepLight 5s ease infinite;"></div>
       <div style="flex-shrink:0; width:28px; text-align:center; position:relative; z-index:1;">
         <div style="font-size:1.4rem; line-height:1;">${t.crown}</div>
         <div style="font-size:0.58rem; color:${t.subC}; font-weight:700; letter-spacing:0.1em; margin-top:2px;">${t.prefix}</div>
       </div>
-
-      <!-- divider -->
       <div style="width:1px; height:42px; background:linear-gradient(180deg,transparent,${t.border},transparent); flex-shrink:0;"></div>
-
-      <!-- badge -->
-      <img src="${t.img}" style="width:46px; height:46px; object-fit:contain;
-        filter:drop-shadow(0 0 8px ${t.dimC});
-        flex-shrink:0; position:relative; z-index:1;">
-
-      <!-- text -->
+      <img src="${t.img}" style="width:46px; height:46px; object-fit:contain; filter:drop-shadow(0 0 8px ${t.dimC}); flex-shrink:0; position:relative; z-index:1;">
       <div style="flex:1; min-width:0; position:relative; z-index:1;">
         <div style="font-size:0.62rem; color:${t.subC}; font-weight:700; letter-spacing:0.1em; margin-bottom:3px; text-transform:uppercase;">${t.label}</div>
-        <div style="font-size:0.98rem; font-weight:800; color:${t.nameC};
-          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:0.01em;">${displayName}</div>
+        <div style="font-size:0.98rem; font-weight:800; color:${t.nameC}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:0.01em;">${displayName}</div>
         ${name && score ? `<div style="font-size:0.68rem; color:${t.subC}; margin-top:2px;">${score}</div>` : ''}
       </div>
     </div>`;
@@ -1878,7 +1855,6 @@ function openWeeklyRank() {
   document.getElementById('wr-cards').innerHTML = cards;
   document.getElementById('modal-weekly-rank').classList.add('show');
 }
-
 function closeWeeklyRank() {
   document.getElementById('modal-weekly-rank').classList.remove('show');
   localStorage.setItem('weekly_rank_seen_' + getWeekKey(), '1');
@@ -2077,6 +2053,26 @@ function maybeShowWeeklyRank() {
       <div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>
     `;
     container.appendChild(div);
+  });
+}
+  // Cập nhật leaderboard cho modal tuần
+function updateWeeklyRankData(leaderboard) {
+  window._leaderboard = leaderboard || {};
+}
+
+// Gọi trong setupRealtime
+function setupRealtime() {
+  onValue(ref(db, 'shared/controls'), snap => {
+    const data = snap.val();
+    if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+  });
+
+  onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
+  onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+  onValue(ref(db, 'shared/leaderboard'), snap => {
+    const data = snap.val();
+    renderLeaderboard(data);
+    updateWeeklyRankData(data);   // ← Cập nhật cho modal tuần
   });
 }
   function setupRealtime() {
