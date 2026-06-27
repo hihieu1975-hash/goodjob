@@ -1953,10 +1953,14 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // Control + Điểm + Lịch sử
+  // Control chính
   window.control = async function(action) {
     try {
-      await set(ref(db, 'shared/controls'), { state: action, timestamp: Date.now(), updatedBy: currentUser?.name || 'Guest' });
+      await set(ref(db, 'shared/controls'), { 
+        state: action, 
+        timestamp: Date.now(), 
+        updatedBy: currentUser?.name || 'Guest' 
+      });
 
       // Lưu lịch sử
       const newHistory = push(ref(db, 'shared/history'));
@@ -2000,7 +2004,7 @@ function maybeShowWeeklyRank() {
     } catch(e) { console.error(e); }
   };
 
-  // Render functions
+  // Render
   function renderHistory(history) {
     const container = document.getElementById('history-list');
     container.innerHTML = '';
@@ -2032,9 +2036,10 @@ function maybeShowWeeklyRank() {
       const data = snap.val();
       if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
     });
+
     onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
-    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
-    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard:", snap.val()));
+    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));   // Nhật ký
+    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard realtime:", snap.val()));
   }
 
   // Auth state
