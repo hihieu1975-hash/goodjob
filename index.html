@@ -2007,7 +2007,16 @@ function maybeShowWeeklyRank() {
       container.appendChild(div);
     });
   }
-
+// Lưu lịch sử mỗi khi điều khiển
+async function addToHistory(action) {
+  const historyRef = ref(db, 'shared/history');
+  const newEntry = push(historyRef);
+  await set(newEntry, {
+    action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
+    user: currentUser?.name || 'Guest',
+    timestamp: Date.now()
+  });
+}
   // Thay hàm control cũ bằng hàm này
 window.control = async function(action) {
   try {
@@ -2016,20 +2025,34 @@ window.control = async function(action) {
       timestamp: Date.now(),
       updatedBy: currentUser?.name || 'Guest'
     });
+    await addToHistory(action);
+    console.log(`✅ Gửi lệnh: ${action}`);
+
+    // Cập nhật UI ngay
+    const btnOn = document.getElementById('btn-on');
+    const btnOff = document.getElementById('btn-off');
+    const btnAuto = document.getElementById('btn-auto');
+
+    btnOn.classList.toggle('active-on', action === 'on');
+    btnOff.classList.toggle('active-off', action === 'off');
+    btnAuto.classList.toggle('active-auto', action === 'auto');
+
+    // Cập nhật text trạng thái
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
     
-    console.log(`✅ Đã gửi lệnh: ${action}`);
-    
-    // Cập nhật UI ngay lập tức
-    document.getElementById('btn-on').classList.toggle('active-on', action === 'on');
-    document.getElementById('btn-off').classList.toggle('active-off', action === 'off');
-    // AUTO thì bỏ active cả 2
-    if (action === 'auto') {
-      document.getElementById('btn-on').classList.remove('active-on');
-      document.getElementById('btn-off').classList.remove('active-off');
+    if (action === 'on') {
+      statusText.textContent = 'Đèn đang bật';
+      statusDot.className = 'dot dot-on';
+    } else if (action === 'off') {
+      statusText.textContent = 'Đèn đang tắt';
+      statusDot.className = 'dot dot-off';
+    } else if (action === 'auto') {
+      statusText.textContent = 'Chế độ AUTO';
+      statusDot.className = 'dot dot-auto';
     }
-    
   } catch(e) {
-    console.error("Lỗi khi điều khiển:", e);
+    console.error("Lỗi control:", e);
   }
 };
   // Auth State
