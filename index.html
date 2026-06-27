@@ -1893,64 +1893,139 @@ function maybeShowWeeklyRank() {
 
 </div> <!-- /#main-app -->
 
-<script>
-function switchTab(tab) {
-  const isLogin = tab === 'login';
-  document.getElementById('form-login').style.display = isLogin ? '' : 'none';
-  document.getElementById('form-register').style.display = isLogin ? 'none' : '';
-  document.getElementById('tab-login').style.background = isLogin ? 'rgba(255,255,255,0.15)' : 'transparent';
-  document.getElementById('tab-login').style.color = isLogin ? 'white' : 'rgba(255,255,255,0.45)';
-  document.getElementById('tab-register').style.background = isLogin ? 'transparent' : 'rgba(255,255,255,0.15)';
-  document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
-}
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, push, onValue, update, remove }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
-  if (!email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
-  try {
-    await window._doLogin(email, password);
-  } catch(e) {
-    const msgs = {
-      'auth/user-not-found': 'Email không tồn tại.',
-      'auth/wrong-password': 'Sai mật khẩu.',
-      'auth/invalid-email': 'Email không hợp lệ.',
-      'auth/invalid-credential': 'Email hoặc mật khẩu không đúng.',
-    };
-    errEl.textContent = msgs[e.code] || 'Đăng nhập thất bại: ' + e.message;
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-OO6H-rvnCa5exi973aI0SQRw-EI9KzE",
+    authDomain: "home-17a5d.firebaseapp.com",
+    databaseURL: "https://home-17a5d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "home-17a5d",
+    storageBucket: "home-17a5d.firebasestorage.app",
+    messagingSenderId: "187037669957",
+    appId: "1:187037669957:web:7a487df69ac5b18fcbe12c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  window._fb = { ref, set, get, push, onValue, update, remove, db };
+  window._auth = { auth, signOut: () => signOut(auth) };
+  window._doLogin = (email, password) => signInWithEmailAndPassword(auth, email, password);
+  window._doRegister = (email, password, name) =>
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(cred => updateProfile(cred.user, { displayName: name }));
+
+  let currentUser = null;
+
+  // ==================== REALTIME MULTI-USER ====================
+  function setupRealtime() {
+    console.log("🔄 Setup realtime listeners...");
+
+    // Controls
+    const controlsRef = ref(db, 'shared/controls');
+    onValue(controlsRef, (snapshot) => {
+      const data = snapshot.val();
+      console.log('📡 Controls realtime:', data);
+      if (data) {
+        document.getElementById('status-text').textContent = 
+          data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+        
+        document.getElementById('btn-on').classList.toggle('active-on', data.state === 'on');
+        document.getElementById('btn-off').classList.toggle('active-off', data.state === 'off');
+      }
+    });
+
+    // Comments
+    const commentsRef = ref(db, 'shared/comments');
+    onValue(commentsRef, (snapshot) => {
+      console.log('💬 Comments realtime received');
+      renderComments(snapshot.val());
+    });
+
+    console.log("✅ Realtime multi-user đã sẵn sàng");
   }
-}
 
-async function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  const errEl = document.getElementById('reg-error');
-  errEl.textContent = '';
-  if (!name || !email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
-  if (password.length < 6) { errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.'; return; }
-  try {
-    await window._doRegister(email, password, name);
-  } catch(e) {
-    const msgs = {
-      'auth/email-already-in-use': 'Email này đã được đăng ký.',
-      'auth/invalid-email': 'Email không hợp lệ.',
-      'auth/weak-password': 'Mật khẩu quá yếu.',
-    };
-    errEl.textContent = msgs[e.code] || 'Đăng ký thất bại: ' + e.message;
+  function renderComments(comments) {
+    const container = document.getElementById('comments');
+    container.innerHTML = '';
+    if (!comments) {
+      container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
+      return;
+    }
+    Object.keys(comments).forEach(key => {
+      const c = comments[key];
+      const div = document.createElement('div');
+      div.className = 'comment-item';
+      div.innerHTML = `
+        <div class="comment-author">${c.user || 'Anonymous'}</div>
+        <div class="comment-text">${c.text}</div>
+        <div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>
+      `;
+      container.appendChild(div);
+    });
   }
-}
 
-// Enter key support
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  if (document.getElementById('form-login').style.display !== 'none' &&
-      document.activeElement?.closest('#form-login')) doLogin();
-  if (document.getElementById('form-register').style.display !== 'none' &&
-      document.activeElement?.closest('#form-register')) doRegister();
-});
+  // Control đèn
+  window.control = async function(action) {
+    try {
+      await set(ref(db, 'shared/controls'), {
+        state: action,
+        timestamp: Date.now(),
+        updatedBy: currentUser?.name || 'Guest'
+      });
+      console.log(`✅ Gửi lệnh ${action} thành công`);
+    } catch(e) { console.error(e); }
+  };
+
+  // Gửi comment
+  window.sendComment = async function() {
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      const newRef = push(ref(db, 'shared/comments'));
+      await set(newRef, {
+        text: text,
+        user: currentUser?.name || 'Anonymous',
+        timestamp: Date.now()
+      });
+      input.value = '';
+      console.log("✅ Comment đã gửi");
+    } catch(e) { console.error(e); }
+  };
+
+  // Auth
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = { uid: user.uid, name: user.displayName, email: user.email };
+      document.getElementById('display-name').textContent = currentUser.name || currentUser.email;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      setupRealtime();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+    }
+  });
+
+  window._doLogin = async (email, password) => {
+    try { await signInWithEmailAndPassword(auth, email, password); } 
+    catch(e) { console.error(e); }
+  };
+
+  window._doRegister = async (email, password, name) => {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+    } catch(e) { console.error(e); }
+  };
 </script>
 </body>
 </html>
