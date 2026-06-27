@@ -1971,51 +1971,73 @@ function maybeShowWeeklyRank() {
 
   // ==================== CONTROL + HISTORY + UI ====================
   window.control = async function(action) {
-    try {
-      await set(ref(db, 'shared/controls'), {
-        state: action,
-        timestamp: Date.now(),
-        updatedBy: currentUser?.name || 'Guest'
-      });
+  try {
+    await set(ref(db, 'shared/controls'), {
+      state: action,
+      timestamp: Date.now(),
+      updatedBy: currentUser?.name || 'Guest'
+    });
 
-      // Lưu lịch sử
-      const historyRef = ref(db, 'shared/history');
-      const newEntry = push(historyRef);
-      await set(newEntry, {
-        action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
-        user: currentUser?.name || 'Guest',
-        timestamp: Date.now()
-      });
+    // Lưu lịch sử
+    const historyRef = ref(db, 'shared/history');
+    const newEntry = push(historyRef);
+    await set(newEntry, {
+      action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
+      user: currentUser?.name || 'Guest',
+      timestamp: Date.now()
+    });
 
-      // Cập nhật UI
-      const btnOn = document.getElementById('btn-on');
-      const btnOff = document.getElementById('btn-off');
-      const btnAuto = document.getElementById('btn-auto');
-      const statusText = document.getElementById('status-text');
-      const statusDot = document.getElementById('status-dot');
+    // Cập nhật UI nút
+    const btnOn = document.getElementById('btn-on');
+    const btnOff = document.getElementById('btn-off');
+    const btnAuto = document.getElementById('btn-auto');
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+    const schedulePanel = document.getElementById('schedule-panel');
+    const scheduleHint = document.getElementById('schedule-hint');
 
-      btnOn.classList.toggle('active-on', action === 'on');
-      btnOff.classList.toggle('active-off', action === 'off');
-      btnAuto.classList.toggle('active-auto', action === 'auto');
+    btnOn.classList.toggle('active-on', action === 'on');
+    btnOff.classList.toggle('active-off', action === 'off');
+    btnAuto.classList.toggle('active-auto', action === 'auto');
 
-      if (action === 'on') {
-        statusText.textContent = 'Đèn đang bật';
-        statusDot.className = 'dot dot-on';
-      } else if (action === 'off') {
-        statusText.textContent = 'Đèn đang tắt';
-        statusDot.className = 'dot dot-off';
-      } else if (action === 'auto') {
-        statusText.textContent = 'Chế độ AUTO';
-        statusDot.className = 'dot dot-auto';
-        // Mở panel lịch
-        document.getElementById('schedule-panel').style.display = 'block';
-        document.getElementById('schedule-hint').style.display = 'none';
+    if (action === 'on') {
+      statusText.textContent = 'Đèn đang bật';
+      statusDot.className = 'dot dot-on';
+      
+      // Cộng điểm cho bảng xếp hạng
+      if (currentUser) {
+        const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
+        const snap = await get(lbRef);
+        const currentScore = snap.exists() ? snap.val() : 0;
+        await set(lbRef, currentScore + 100);
       }
-    } catch(e) {
-      console.error("Lỗi control:", e);
+    } 
+    else if (action === 'off') {
+      statusText.textContent = 'Đèn đang tắt';
+      statusDot.className = 'dot dot-off';
+    } 
+    else if (action === 'auto') {
+      statusText.textContent = 'Chế độ AUTO';
+      statusDot.className = 'dot dot-auto';
+      schedulePanel.style.display = 'block';
+      scheduleHint.style.display = 'none';
     }
-  };
 
+    // Nếu tắt AUTO → ẩn lịch và thông báo
+    if (action !== 'auto') {
+      schedulePanel.style.display = 'none';
+      scheduleHint.style.display = 'flex';
+      
+      if (action === 'off') {
+        // Có thể thêm modal thông báo nếu muốn
+        console.log("AUTO đã tắt - Không thể đặt lịch nữa");
+      }
+    }
+
+  } catch(e) {
+    console.error("Lỗi control:", e);
+  }
+};
   // Render lịch sử
   function renderHistory(history) {
     const container = document.getElementById('history-list');
