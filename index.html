@@ -1916,39 +1916,76 @@ function maybeShowWeeklyRank() {
 
   window._fb = { ref, set, get, push, onValue, update, remove, db };
   window._auth = { auth, signOut: () => signOut(auth) };
-  window._doLogin = (email, password) => signInWithEmailAndPassword(auth, email, password);
-  window._doRegister = (email, password, name) =>
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(cred => updateProfile(cred.user, { displayName: name }));
 
   let currentUser = null;
 
+  // ==================== AUTH FUNCTIONS ====================
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    if (!email || !password) { 
+      errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; 
+      return; 
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(e) {
+      const msgs = {
+        'auth/user-not-found': 'Email không tồn tại.',
+        'auth/wrong-password': 'Sai mật khẩu.',
+        'auth/invalid-email': 'Email không hợp lệ.',
+        'auth/invalid-credential': 'Email hoặc mật khẩu không đúng.',
+      };
+      errEl.textContent = msgs[e.code] || 'Đăng nhập thất bại: ' + e.message;
+    }
+  };
+
+  window.doRegister = async function() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const errEl = document.getElementById('reg-error');
+    errEl.textContent = '';
+    if (!name || !email || !password) { 
+      errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; 
+      return; 
+    }
+    if (password.length < 6) { 
+      errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.'; 
+      return; 
+    }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+    } catch(e) {
+      const msgs = {
+        'auth/email-already-in-use': 'Email này đã được đăng ký.',
+        'auth/invalid-email': 'Email không hợp lệ.',
+        'auth/weak-password': 'Mật khẩu quá yếu.',
+      };
+      errEl.textContent = msgs[e.code] || 'Đăng ký thất bại: ' + e.message;
+    }
+  };
+
   // ==================== REALTIME MULTI-USER ====================
   function setupRealtime() {
-    console.log("🔄 Setup realtime listeners...");
+    console.log("🔄 Setup realtime...");
 
-    // Controls
     const controlsRef = ref(db, 'shared/controls');
     onValue(controlsRef, (snapshot) => {
       const data = snapshot.val();
-      console.log('📡 Controls realtime:', data);
       if (data) {
         document.getElementById('status-text').textContent = 
           data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-        
-        document.getElementById('btn-on').classList.toggle('active-on', data.state === 'on');
-        document.getElementById('btn-off').classList.toggle('active-off', data.state === 'off');
       }
     });
 
-    // Comments
     const commentsRef = ref(db, 'shared/comments');
     onValue(commentsRef, (snapshot) => {
-      console.log('💬 Comments realtime received');
       renderComments(snapshot.val());
     });
-
-    console.log("✅ Realtime multi-user đã sẵn sàng");
   }
 
   function renderComments(comments) {
@@ -1971,41 +2008,32 @@ function maybeShowWeeklyRank() {
     });
   }
 
-  // Control đèn
   window.control = async function(action) {
-    try {
-      await set(ref(db, 'shared/controls'), {
-        state: action,
-        timestamp: Date.now(),
-        updatedBy: currentUser?.name || 'Guest'
-      });
-      console.log(`✅ Gửi lệnh ${action} thành công`);
-    } catch(e) { console.error(e); }
+    await set(ref(db, 'shared/controls'), {
+      state: action,
+      timestamp: Date.now(),
+      updatedBy: currentUser?.name || 'Guest'
+    });
   };
 
-  // Gửi comment
   window.sendComment = async function() {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
     if (!text) return;
-
-    try {
-      const newRef = push(ref(db, 'shared/comments'));
-      await set(newRef, {
-        text: text,
-        user: currentUser?.name || 'Anonymous',
-        timestamp: Date.now()
-      });
-      input.value = '';
-      console.log("✅ Comment đã gửi");
-    } catch(e) { console.error(e); }
+    const newRef = push(ref(db, 'shared/comments'));
+    await set(newRef, {
+      text: text,
+      user: currentUser?.name || 'Anonymous',
+      timestamp: Date.now()
+    });
+    input.value = '';
   };
 
-  // Auth
+  // Auth State
   onAuthStateChanged(auth, user => {
     if (user) {
-      currentUser = { uid: user.uid, name: user.displayName, email: user.email };
-      document.getElementById('display-name').textContent = currentUser.name || currentUser.email;
+      currentUser = { uid: user.uid, name: user.displayName || user.email };
+      document.getElementById('display-name').textContent = currentUser.name;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
@@ -2015,16 +2043,15 @@ function maybeShowWeeklyRank() {
     }
   });
 
-  window._doLogin = async (email, password) => {
-    try { await signInWithEmailAndPassword(auth, email, password); } 
-    catch(e) { console.error(e); }
-  };
-
-  window._doRegister = async (email, password, name) => {
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName: name });
-    } catch(e) { console.error(e); }
+  // Switch Tab vẫn giữ nguyên
+  window.switchTab = function(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('form-login').style.display = isLogin ? '' : 'none';
+    document.getElementById('form-register').style.display = isLogin ? 'none' : '';
+    document.getElementById('tab-login').style.background = isLogin ? 'rgba(255,255,255,0.15)' : 'transparent';
+    document.getElementById('tab-login').style.color = isLogin ? 'white' : 'rgba(255,255,255,0.45)';
+    document.getElementById('tab-register').style.background = isLogin ? 'transparent' : 'rgba(255,255,255,0.15)';
+    document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 </script>
 </body>
