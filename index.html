@@ -560,7 +560,39 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 </style>
 </head>
 <body>
-
+<script>
+window._onAuthChange = function(user) {
+  if (user) {
+    const ls = document.getElementById('login-screen');
+    ls.style.display = 'none';
+    ls.style.visibility = 'hidden';
+    ls.style.zIndex = '-1';
+    document.getElementById('main-app').style.display = 'block';
+    window.memberName = user.name || user.email;
+memberName = window.memberName;
+    localStorage.setItem('member_name', memberName);
+    document.getElementById('display-name').textContent = memberName;
+    if (user.photo) {
+      const av = document.getElementById('user-avatar');
+      av.src = user.photo;
+      av.style.display = 'block';
+    }
+    if (window._fbReady) {
+      const { db, ref, set } = window._fb;
+      set(ref(db, 'users/' + user.uid), {
+        name: user.name, email: user.email,
+        photo: user.photo || '', lastSeen: Date.now(),
+      });
+    }
+  } else {
+    const ls = document.getElementById('login-screen');
+    ls.style.display = 'flex';
+    ls.style.visibility = 'visible';
+    ls.style.zIndex = '9999';
+    document.getElementById('main-app').style.display = 'none';
+  }
+};
+</script>
 <!-- ===== LOGIN SCREEN ===== -->
 <div id="login-screen" style="
   position:fixed; inset:0; z-index:9999;
@@ -1111,20 +1143,20 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 
   // Watch auth state
   onAuthStateChanged(auth, user => {
-    if (user) {
-      // Logged in
-      window._currentUser = {
-        uid:   user.uid,
-        name:  user.displayName,
-        email: user.email,
-        photo: user.photoURL,
-      };
-      document.dispatchEvent(new CustomEvent('auth-change', { detail: { user: window._currentUser } }));
-    } else {
-      window._currentUser = null;
-      document.dispatchEvent(new CustomEvent('auth-change', { detail: { user: null } }));
-    }
-  });
+  if (user) {
+    window._currentUser = {
+      uid:   user.uid,
+      name:  user.displayName,
+      email: user.email,
+      photo: user.photoURL,
+    };
+  } else {
+    window._currentUser = null;
+  }
+  if (typeof window._onAuthChange === 'function') {
+    window._onAuthChange(window._currentUser);
+  }
+});
 
   window._fbReady = true;
   document.dispatchEvent(new Event('firebase-ready'));
@@ -1283,7 +1315,7 @@ function submitName() {
 }
 
 /* ===== INIT USER ===== */
-let memberName = localStorage.getItem('member_name') || 'Thành viên';
+  var memberName = localStorage.getItem('member_name') || 'Thành viên';
 
 let historyData = [];
 let commentData = [];
@@ -1610,42 +1642,6 @@ window.addEventListener('load', () => {
   }
 });
 /* ===== AUTH ===== */
-document.addEventListener('auth-change', e => {
-  const user = e.detail.user;
-  if (user) {
-    // Show app, hide login
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
-
-    // Set display name from Google account
-    memberName = user.name || user.email;
-    localStorage.setItem('member_name', memberName);
-    document.getElementById('display-name').textContent = memberName;
-
-    // Show avatar
-    if (user.photo) {
-      const av = document.getElementById('user-avatar');
-      av.src = user.photo;
-      av.style.display = 'block';
-    }
-
-    // Save user profile to Firebase
-    if (window._fbReady) {
-      const { db, ref, set } = window._fb;
-      set(ref(db, 'users/' + user.uid), {
-        name:  user.name,
-        email: user.email,
-        photo: user.photo || '',
-        lastSeen: Date.now(),
-      });
-    }
-  } else {
-    // Logged out → show login screen
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('main-app').style.display = 'none';
-  }
-});
-
 /* ===== FIREBASE SYNC ===== */
 window._leaderboard = {};
 
