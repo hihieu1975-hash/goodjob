@@ -2029,18 +2029,30 @@ function maybeShowWeeklyRank() {
     });
   }
 
-  function renderComments(comments) {
-    const container = document.getElementById('comments');
-    container.innerHTML = '';
-    if (!comments) return container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
-    Object.keys(comments).forEach(key => {
-      const c = comments[key];
-      const div = document.createElement('div');
-      div.className = 'comment-item';
-      div.innerHTML = `<div class="comment-author">${c.user || 'Anonymous'}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>`;
-      container.appendChild(div);
-    });
+ function renderComments(comments) {
+  const container = document.getElementById('comments');
+  container.innerHTML = '';
+  if (!comments) {
+    container.innerHTML = '<div class="empty">Chưa có lời nhắn</div>';
+    return;
   }
+
+  // Lấy tất cả comment và sắp xếp theo thời gian mới nhất lên trên
+  const sortedComments = Object.keys(comments)
+    .map(key => ({ key, ...comments[key] }))
+    .sort((a, b) => b.timestamp - a.timestamp);   // Mới nhất lên đầu
+
+  sortedComments.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `
+      <div class="comment-author">${c.user || 'Anonymous'}</div>
+      <div class="comment-text">${c.text}</div>
+      <div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>
+    `;
+    container.appendChild(div);
+  });
+}
 
   function setupRealtime() {
     onValue(ref(db, 'shared/controls'), snap => {
