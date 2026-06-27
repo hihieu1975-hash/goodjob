@@ -1953,7 +1953,7 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
   };
 
-  // Control + Điểm
+  // Control + Lịch sử + Điểm
   window.control = async function(action) {
     try {
       await set(ref(db, 'shared/controls'), { 
@@ -1962,6 +1962,7 @@ function maybeShowWeeklyRank() {
         updatedBy: currentUser?.name || 'Guest' 
       });
 
+      // Lưu lịch sử
       const newHistory = push(ref(db, 'shared/history'));
       await set(newHistory, {
         action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'AUTO',
@@ -1969,6 +1970,7 @@ function maybeShowWeeklyRank() {
         timestamp: Date.now()
       });
 
+      // Cộng điểm
       if (action === 'on' && currentUser?.name) {
         const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
         const snap = await get(lbRef);
@@ -2015,6 +2017,18 @@ function maybeShowWeeklyRank() {
     input.value = '';
   };
 
+  function renderHistory(history) {
+    const container = document.getElementById('history-list');
+    container.innerHTML = '';
+    if (!history) return container.innerHTML = '<div class="empty">Chưa có lịch sử</div>';
+    Object.entries(history).slice(-5).reverse().forEach(([_, h]) => {
+      const div = document.createElement('div');
+      div.className = 'h-item';
+      div.innerHTML = `<div><span>${h.action}</span><div class="h-item-user">bởi ${h.user}</div></div><div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>`;
+      container.appendChild(div);
+    });
+  }
+
   function renderComments(comments) {
     const container = document.getElementById('comments');
     container.innerHTML = '';
@@ -2029,8 +2043,13 @@ function maybeShowWeeklyRank() {
   }
 
   function setupRealtime() {
+    onValue(ref(db, 'shared/controls'), snap => {
+      const data = snap.val();
+      if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+    });
+
+    onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
     onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
-    onValue(ref(db, 'shared/leaderboard'), snap => console.log("Leaderboard:", snap.val()));
   }
 
   onAuthStateChanged(auth, user => {
