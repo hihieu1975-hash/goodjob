@@ -1892,7 +1892,6 @@ function maybeShowWeeklyRank() {
 </script>
 
 </div> <!-- /#main-app -->
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get, push, onValue, update, remove }
@@ -1919,16 +1918,13 @@ function maybeShowWeeklyRank() {
 
   let currentUser = null;
 
-  // ==================== AUTH FUNCTIONS ====================
+  // ==================== AUTH ====================
   window.doLogin = async function() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
-    if (!email || !password) { 
-      errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; 
-      return; 
-    }
+    if (!email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch(e) {
@@ -1948,14 +1944,8 @@ function maybeShowWeeklyRank() {
     const password = document.getElementById('reg-password').value;
     const errEl = document.getElementById('reg-error');
     errEl.textContent = '';
-    if (!name || !email || !password) { 
-      errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; 
-      return; 
-    }
-    if (password.length < 6) { 
-      errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.'; 
-      return; 
-    }
+    if (!name || !email || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin.'; return; }
+    if (password.length < 6) { errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.'; return; }
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
@@ -1969,22 +1959,84 @@ function maybeShowWeeklyRank() {
     }
   };
 
-  // ==================== REALTIME MULTI-USER ====================
-  function setupRealtime() {
-    console.log("🔄 Setup realtime...");
+  window.switchTab = function(tab) {
+    const isLogin = tab === 'login';
+    document.getElementById('form-login').style.display = isLogin ? '' : 'none';
+    document.getElementById('form-register').style.display = isLogin ? 'none' : '';
+    document.getElementById('tab-login').style.background = isLogin ? 'rgba(255,255,255,0.15)' : 'transparent';
+    document.getElementById('tab-login').style.color = isLogin ? 'white' : 'rgba(255,255,255,0.45)';
+    document.getElementById('tab-register').style.background = isLogin ? 'transparent' : 'rgba(255,255,255,0.15)';
+    document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
+  };
 
-    const controlsRef = ref(db, 'shared/controls');
-    onValue(controlsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById('status-text').textContent = 
-          data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+  // ==================== CONTROL + HISTORY + UI ====================
+  window.control = async function(action) {
+    try {
+      await set(ref(db, 'shared/controls'), {
+        state: action,
+        timestamp: Date.now(),
+        updatedBy: currentUser?.name || 'Guest'
+      });
+
+      // Lưu lịch sử
+      const historyRef = ref(db, 'shared/history');
+      const newEntry = push(historyRef);
+      await set(newEntry, {
+        action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
+        user: currentUser?.name || 'Guest',
+        timestamp: Date.now()
+      });
+
+      // Cập nhật UI
+      const btnOn = document.getElementById('btn-on');
+      const btnOff = document.getElementById('btn-off');
+      const btnAuto = document.getElementById('btn-auto');
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+
+      btnOn.classList.toggle('active-on', action === 'on');
+      btnOff.classList.toggle('active-off', action === 'off');
+      btnAuto.classList.toggle('active-auto', action === 'auto');
+
+      if (action === 'on') {
+        statusText.textContent = 'Đèn đang bật';
+        statusDot.className = 'dot dot-on';
+      } else if (action === 'off') {
+        statusText.textContent = 'Đèn đang tắt';
+        statusDot.className = 'dot dot-off';
+      } else if (action === 'auto') {
+        statusText.textContent = 'Chế độ AUTO';
+        statusDot.className = 'dot dot-auto';
+        // Mở panel lịch
+        document.getElementById('schedule-panel').style.display = 'block';
+        document.getElementById('schedule-hint').style.display = 'none';
       }
-    });
+    } catch(e) {
+      console.error("Lỗi control:", e);
+    }
+  };
 
-    const commentsRef = ref(db, 'shared/comments');
-    onValue(commentsRef, (snapshot) => {
-      renderComments(snapshot.val());
+  // Render lịch sử
+  function renderHistory(history) {
+    const container = document.getElementById('history-list');
+    container.innerHTML = '';
+    if (!history) {
+      container.innerHTML = '<div class="empty">Chưa có lịch sử</div>';
+      return;
+    }
+    // Hiển thị 5 mục mới nhất
+    const entries = Object.entries(history).slice(-5).reverse();
+    entries.forEach(([key, h]) => {
+      const div = document.createElement('div');
+      div.className = 'h-item';
+      div.innerHTML = `
+        <div>
+          <span>${h.action}</span>
+          <div class="h-item-user">bởi ${h.user}</div>
+        </div>
+        <div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>
+      `;
+      container.appendChild(div);
     });
   }
 
@@ -2007,55 +2059,21 @@ function maybeShowWeeklyRank() {
       container.appendChild(div);
     });
   }
-// Lưu lịch sử mỗi khi điều khiển
-async function addToHistory(action) {
-  const historyRef = ref(db, 'shared/history');
-  const newEntry = push(historyRef);
-  await set(newEntry, {
-    action: action === 'on' ? 'Bật đèn' : action === 'off' ? 'Tắt đèn' : 'Chế độ AUTO',
-    user: currentUser?.name || 'Guest',
-    timestamp: Date.now()
-  });
-}
-  // Thay hàm control cũ bằng hàm này
-window.control = async function(action) {
-  try {
-    await set(ref(db, 'shared/controls'), {
-      state: action,
-      timestamp: Date.now(),
-      updatedBy: currentUser?.name || 'Guest'
+
+  // Setup realtime
+  function setupRealtime() {
+    onValue(ref(db, 'shared/controls'), (snap) => {
+      const data = snap.val();
+      if (data) {
+        document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+      }
     });
-    await addToHistory(action);
-    console.log(`✅ Gửi lệnh: ${action}`);
 
-    // Cập nhật UI ngay
-    const btnOn = document.getElementById('btn-on');
-    const btnOff = document.getElementById('btn-off');
-    const btnAuto = document.getElementById('btn-auto');
-
-    btnOn.classList.toggle('active-on', action === 'on');
-    btnOff.classList.toggle('active-off', action === 'off');
-    btnAuto.classList.toggle('active-auto', action === 'auto');
-
-    // Cập nhật text trạng thái
-    const statusText = document.getElementById('status-text');
-    const statusDot = document.getElementById('status-dot');
-    
-    if (action === 'on') {
-      statusText.textContent = 'Đèn đang bật';
-      statusDot.className = 'dot dot-on';
-    } else if (action === 'off') {
-      statusText.textContent = 'Đèn đang tắt';
-      statusDot.className = 'dot dot-off';
-    } else if (action === 'auto') {
-      statusText.textContent = 'Chế độ AUTO';
-      statusDot.className = 'dot dot-auto';
-    }
-  } catch(e) {
-    console.error("Lỗi control:", e);
+    onValue(ref(db, 'shared/history'), (snap) => renderHistory(snap.val()));
+    onValue(ref(db, 'shared/comments'), (snap) => renderComments(snap.val()));
   }
-};
-  // Auth State
+
+  // Auth state
   onAuthStateChanged(auth, user => {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
@@ -2068,17 +2086,6 @@ window.control = async function(action) {
       document.getElementById('main-app').style.display = 'none';
     }
   });
-
-  // Switch Tab vẫn giữ nguyên
-  window.switchTab = function(tab) {
-    const isLogin = tab === 'login';
-    document.getElementById('form-login').style.display = isLogin ? '' : 'none';
-    document.getElementById('form-register').style.display = isLogin ? 'none' : '';
-    document.getElementById('tab-login').style.background = isLogin ? 'rgba(255,255,255,0.15)' : 'transparent';
-    document.getElementById('tab-login').style.color = isLogin ? 'white' : 'rgba(255,255,255,0.45)';
-    document.getElementById('tab-register').style.background = isLogin ? 'transparent' : 'rgba(255,255,255,0.15)';
-    document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
-  };
 </script>
 </body>
 </html>
