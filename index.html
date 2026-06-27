@@ -2008,27 +2008,30 @@ function maybeShowWeeklyRank() {
     });
   }
 
-  window.control = async function(action) {
+  // Thay hàm control cũ bằng hàm này
+window.control = async function(action) {
+  try {
     await set(ref(db, 'shared/controls'), {
       state: action,
       timestamp: Date.now(),
       updatedBy: currentUser?.name || 'Guest'
     });
-  };
-
-  window.sendComment = async function() {
-    const input = document.getElementById('comment-input');
-    const text = input.value.trim();
-    if (!text) return;
-    const newRef = push(ref(db, 'shared/comments'));
-    await set(newRef, {
-      text: text,
-      user: currentUser?.name || 'Anonymous',
-      timestamp: Date.now()
-    });
-    input.value = '';
-  };
-
+    
+    console.log(`✅ Đã gửi lệnh: ${action}`);
+    
+    // Cập nhật UI ngay lập tức
+    document.getElementById('btn-on').classList.toggle('active-on', action === 'on');
+    document.getElementById('btn-off').classList.toggle('active-off', action === 'off');
+    // AUTO thì bỏ active cả 2
+    if (action === 'auto') {
+      document.getElementById('btn-on').classList.remove('active-on');
+      document.getElementById('btn-off').classList.remove('active-off');
+    }
+    
+  } catch(e) {
+    console.error("Lỗi khi điều khiển:", e);
+  }
+};
   // Auth State
   onAuthStateChanged(auth, user => {
     if (user) {
