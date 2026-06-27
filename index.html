@@ -2053,16 +2053,42 @@ function maybeShowWeeklyRank() {
     container.appendChild(div);
   });
 }
+  function renderLeaderboard(leaderboard) {
+  const container = document.getElementById('rank-list'); // ID của danh sách rank
+  if (!container) return;
 
-  function setupRealtime() {
-    onValue(ref(db, 'shared/controls'), snap => {
-      const data = snap.val();
-      if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
-    });
-
-    onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
-    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+  container.innerHTML = '';
+  if (!leaderboard) {
+    container.innerHTML = '<div class="empty">Chưa có ai trong bảng xếp hạng</div>';
+    return;
   }
+
+  // Sắp xếp theo điểm giảm dần
+  const sorted = Object.entries(leaderboard)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5); // Top 5
+
+  sorted.forEach(([name, score], index) => {
+    const div = document.createElement('div');
+    div.className = 'rank-item';
+    div.innerHTML = `
+      <div class="rank-medal">${index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index+1)}</div>
+      <div class="rank-name">${name}</div>
+      <div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>
+    `;
+    container.appendChild(div);
+  });
+}
+  function setupRealtime() {
+  onValue(ref(db, 'shared/controls'), snap => {
+    const data = snap.val();
+    if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+  });
+
+  onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
+  onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+  onValue(ref(db, 'shared/leaderboard'), snap => renderLeaderboard(snap.val())); // ← Thêm dòng này
+}
 
   onAuthStateChanged(auth, user => {
     if (user) {
