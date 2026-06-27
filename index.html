@@ -1970,7 +1970,8 @@ function maybeShowWeeklyRank() {
   };
 
   // ==================== CONTROL + HISTORY + UI ====================
-  window.control = async function(action) {
+  // ==================== CONTROL + ĐIỂM + REALTIME ====================
+window.control = async function(action) {
   try {
     await set(ref(db, 'shared/controls'), {
       state: action,
@@ -1987,7 +1988,16 @@ function maybeShowWeeklyRank() {
       timestamp: Date.now()
     });
 
-    // Cập nhật UI nút
+    // Cộng điểm khi bật đèn
+    if (action === 'on' && currentUser?.name) {
+      const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
+      const snap = await get(lbRef);
+      const currentScore = snap.exists() ? snap.val() : 0;
+      await set(lbRef, currentScore + 100);
+      console.log(`+100 điểm cho ${currentUser.name}`);
+    }
+
+    // Cập nhật UI
     const btnOn = document.getElementById('btn-on');
     const btnOff = document.getElementById('btn-off');
     const btnAuto = document.getElementById('btn-auto');
@@ -2003,41 +2013,56 @@ function maybeShowWeeklyRank() {
     if (action === 'on') {
       statusText.textContent = 'Đèn đang bật';
       statusDot.className = 'dot dot-on';
-      
-      // Cộng điểm cho bảng xếp hạng
-      if (currentUser) {
-        const lbRef = ref(db, 'shared/leaderboard/' + currentUser.name);
-        const snap = await get(lbRef);
-        const currentScore = snap.exists() ? snap.val() : 0;
-        await set(lbRef, currentScore + 100);
-      }
-    } 
-    else if (action === 'off') {
+    } else if (action === 'off') {
       statusText.textContent = 'Đèn đang tắt';
       statusDot.className = 'dot dot-off';
-    } 
-    else if (action === 'auto') {
+    } else if (action === 'auto') {
       statusText.textContent = 'Chế độ AUTO';
       statusDot.className = 'dot dot-auto';
       schedulePanel.style.display = 'block';
       scheduleHint.style.display = 'none';
     }
 
-    // Nếu tắt AUTO → ẩn lịch và thông báo
     if (action !== 'auto') {
       schedulePanel.style.display = 'none';
       scheduleHint.style.display = 'flex';
-      
-      if (action === 'off') {
-        // Có thể thêm modal thông báo nếu muốn
-        console.log("AUTO đã tắt - Không thể đặt lịch nữa");
-      }
     }
-
   } catch(e) {
     console.error("Lỗi control:", e);
   }
 };
+
+// Render leaderboard (nếu có modal)
+function renderLeaderboard() {
+  // Nếu bạn có modal weekly rank, có thể cập nhật ở đây
+  console.log("Leaderboard updated");
+}
+
+// Setup realtime đầy đủ
+function setupRealtime() {
+  // Controls
+  onValue(ref(db, 'shared/controls'), (snap) => {
+    const data = snap.val();
+    if (data) {
+      document.getElementById('status-text').textContent = 
+        data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
+    }
+  });
+
+  // History
+  onValue(ref(db, 'shared/history'), (snap) => renderHistory(snap.val()));
+
+  // Comments (Nhật ký)
+  onValue(ref(db, 'shared/comments'), (snap) => {
+    renderComments(snap.val());
+  });
+
+  // Leaderboard (nếu cần realtime)
+  onValue(ref(db, 'shared/leaderboard'), (snap) => {
+    console.log("Bảng xếp hạng realtime:", snap.val());
+    // Có thể cập nhật UI bảng xếp hạng nếu bạn có
+  });
+}
   // Render lịch sử
   function renderHistory(history) {
     const container = document.getElementById('history-list');
