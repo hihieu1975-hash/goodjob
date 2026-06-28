@@ -2169,25 +2169,30 @@ function maybeShowWeeklyRank() {
       const zone = document.getElementById('camera-zone');
       zone.innerHTML = `<div style="text-align:center; padding:16px; font-size:0.8rem; color:rgba(255,255,255,0.4);">Đang tải...</div>`;
       // Load gói camera đã mua của user này
-      let tierSnap = await get(ref(db, 'users/' + user.uid + '/cameraTier'));
-      // Migration: nếu không có → thử đọc path cũ bị lưu sai (users/undefined/...)
-      if (!tierSnap.exists() || !tierSnap.val() || tierSnap.val() === 'none') {
-        const oldSnap = await get(ref(db, 'users/undefined/cameraTier'));
-        if (oldSnap.exists() && oldSnap.val() && oldSnap.val() !== 'none') {
-          // Di chuyển sang path đúng, xoá path cũ
-          await set(ref(db, 'users/' + user.uid + '/cameraTier'), oldSnap.val());
-          await set(ref(db, 'users/undefined/cameraTier'), null);
-          tierSnap = oldSnap;
+      try {
+        let tierSnap = await get(ref(db, 'users/' + user.uid + '/cameraTier'));
+        // Migration: nếu không có → thử đọc path cũ bị lưu sai (users/undefined/...)
+        if (!tierSnap.exists() || !tierSnap.val() || tierSnap.val() === 'none') {
+          const oldSnap = await get(ref(db, 'users/undefined/cameraTier'));
+          if (oldSnap.exists() && oldSnap.val() && oldSnap.val() !== 'none') {
+            // Di chuyển sang path đúng, xoá path cũ
+            await set(ref(db, 'users/' + user.uid + '/cameraTier'), oldSnap.val());
+            await set(ref(db, 'users/undefined/cameraTier'), null);
+            tierSnap = oldSnap;
+          }
         }
-      }
-      if (tierSnap.exists()) {
-        const savedTier = tierSnap.val();
-        if (savedTier && savedTier !== 'none') {
-          confirmPay(savedTier, false);
+        if (tierSnap.exists()) {
+          const savedTier = tierSnap.val();
+          if (savedTier && savedTier !== 'none') {
+            confirmPay(savedTier, false);
+          } else {
+            resetCamera();
+          }
         } else {
           resetCamera();
         }
-      } else {
+      } catch(e) {
+        console.error('Lỗi load cameraTier:', e);
         resetCamera();
       }
     } else {
