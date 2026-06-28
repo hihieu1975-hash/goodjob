@@ -72,13 +72,13 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 
 /* CARDS */
 .card {
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 24px;
   padding: 24px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.50);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
 
 .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; }
@@ -482,13 +482,13 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 /* PROJECT SECTION */
 .project-section {
   margin-top: 16px;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.50);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
 
 .proto-label {
@@ -539,10 +539,12 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
   .accordion-body { padding: 0 20px; }
   .accordion-body.open { padding-bottom: 20px; }
 
-  /* Mobile: giữ nền tối giống desktop */
+  /* Mobile: tắt blur nặng, giữ nền tối vừa */
   .card,
   .project-section {
-    background: rgba(0,0,0,0.75) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(0,0,0,0.55) !important;
   }
 }
 
