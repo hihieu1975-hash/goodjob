@@ -1672,6 +1672,15 @@ function confirmPay(tier, showModal = true) {
   }
 }
 
+function resetCamera() {
+  currentTier = 'none';
+  const zone = document.getElementById('camera-zone');
+  if (zone) zone.innerHTML = `
+    <button class="unlock-btn" onclick="openModal()">
+      📹 Nạp tiền để Unlock Camera
+    </button>`;
+}
+
 function closeSuccess() {
   document.getElementById('modal-success').classList.remove('show');
 }
@@ -2154,13 +2163,20 @@ function maybeShowWeeklyRank() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
+      // Hiện loading trong khi chờ Firebase
+      const zone = document.getElementById('camera-zone');
+      zone.innerHTML = `<div style="text-align:center; padding:16px; font-size:0.8rem; color:rgba(255,255,255,0.4);">Đang tải...</div>`;
       // Load gói camera đã mua của user này
       const tierSnap = await get(ref(db, 'users/' + user.uid + '/cameraTier'));
       if (tierSnap.exists()) {
         const savedTier = tierSnap.val();
         if (savedTier && savedTier !== 'none') {
-          confirmPay(savedTier, false); // false = không show modal thành công
+          confirmPay(savedTier, false);
+        } else {
+          resetCamera();
         }
+      } else {
+        resetCamera();
       }
     } else {
       currentUser = null;
