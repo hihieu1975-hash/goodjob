@@ -2138,7 +2138,7 @@ function resetData(type, btn) {
     btn.style.color = '';
   }, 1500);
   Promise.all(paths[type].map(p => remove(ref(db, p)))).then(() => {
-    showToast('🗑️ Đã xoá ' + labels[type], 'info');
+    showToast('Đã xoá ' + labels[type], 'info');
   });
 }
 
@@ -2171,12 +2171,18 @@ function renameUser(uid, oldName) {
   });
 }
 
-function toggleBanUser(uid, name, isBanned) {
+function toggleBanUser(uid, name, isBanned, btn) {
   if (!window._fb) return;
+  // Đổi nút ngay lập tức không chờ Firebase
+  const nowBanned = !isBanned;
+  btn.textContent = nowBanned ? 'Mở' : 'Khoá';
+  btn.style.borderColor = nowBanned ? 'rgba(34,197,94,0.5)' : 'rgba(245,158,11,0.5)';
+  btn.style.background   = nowBanned ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)';
+  btn.style.color        = nowBanned ? '#86efac' : '#fde68a';
+  btn.setAttribute('onclick', "toggleBanUser('" + uid + "','" + name + "'," + nowBanned + ",this)");
   const { db, ref, set: fbSet } = window._fb;
-  fbSet(ref(db, 'users/' + uid + '/banned'), !isBanned).then(() => {
-    showToast(isBanned ? '✅ Đã mở khoá "' + name + '"' : '🔒 Đã khoá "' + name + '"', isBanned ? 'success' : 'error');
-    loadOnlineUsers();
+  fbSet(ref(db, 'users/' + uid + '/banned'), nowBanned).then(() => {
+    showToast(nowBanned ? 'Đã khoá "' + name + '"' : 'Đã mở khoá "' + name + '"', nowBanned ? 'error' : 'success');
   });
 }
 
@@ -2184,7 +2190,7 @@ function deleteUserData(uid, name) {
   if (!window._fb) return;
   const { db, ref, remove: fbRemove } = window._fb;
   fbRemove(ref(db, 'users/' + uid)).then(() => {
-    showToast('🗑️ Đã xoá "' + name + '"', 'error');
+    showToast('Đã xoá "' + name + '"', 'error');
     loadOnlineUsers();
   });
 }
@@ -2242,17 +2248,17 @@ function loadOnlineUsers() {
             style="border:1px solid rgba(129,140,248,0.5);background:rgba(99,102,241,0.1);color:#a5b4fc;">
             ✏️
           </button>
-          <button onclick="toggleBanUser('${u.uid}','${u.name}',${u.banned})"
+          <button onclick="toggleBanUser('${u.uid}','${u.name}',${u.banned},this)"
             class="admin-user-btn"
             style="border:1px solid ${u.banned?'rgba(34,197,94,0.5)':'rgba(245,158,11,0.5)'};
             background:${u.banned?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'};
             color:${u.banned?'#86efac':'#fde68a'};">
-            ${u.banned?'🔓 Mở':'🔒 Khoá'}
+            ${u.banned?'Mở':'Khoá'}
           </button>
           <button onclick="deleteUserData('${u.uid}','${u.name}')"
             class="admin-user-btn"
             style="border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.1);color:#fca5a5;">
-            🗑️ Xoá
+            Xoá
           </button>
         </div>
       </div>`).join('') : '<div class="empty">Chưa có tài khoản</div>';
