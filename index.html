@@ -581,7 +581,9 @@ memberName = window.memberName;
     }
     if (window._fbReady) {
       const { db, ref, set } = window._fb;
-      set(ref(db, 'users/' + user.uid), {
+      // Dùng update thay vì set để không ghi đè cameraTier đã lưu
+      const { update: _update } = window._fb;
+      _update(ref(db, 'users/' + user.uid), {
         name: user.name, email: user.email,
         photo: user.photo || '', lastSeen: Date.now(),
       });
