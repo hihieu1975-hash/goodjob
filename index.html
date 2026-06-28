@@ -592,6 +592,49 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
   100% { background-position: 200% center; }
 }
 
+/* Rainbow admin name effect */
+@keyframes rainbowShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes shimmerSweep {
+  0%   { left: -70%; }
+  50%  { left: 130%; }
+  100% { left: 130%; }
+}
+
+.admin-rainbow-name {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    #ff0000, #ff7700, #ffee00, #00ff00,
+    #00aaff, #8800ff, #ff00cc, #ff0000
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: rainbowShift 3s linear infinite;
+  font-weight: 800;
+}
+.admin-rainbow-name::after {
+  content: '';
+  position: absolute;
+  top: -10%; left: -70%;
+  width: 35%; height: 120%;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgba(255,255,255,0.55),
+    transparent
+  );
+  animation: shimmerSweep 2.5s ease infinite;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
 /* Admin display name in header */
 .admin-display-name {
   background: linear-gradient(90deg, #22c55e, #4ade80, #86efac, #4ade80, #22c55e);
@@ -1669,6 +1712,14 @@ function addHistory(action) {
   renderHistory();
 }
 
+
+// Helper: wrap name with rainbow effect if admin
+function adminName(name) {
+  if (window._adminNameSet && window._adminNameSet.has(name)) {
+    return `<span class="admin-rainbow-name" style="font-size:inherit;">${name}</span>`;
+  }
+  return name;
+}
 function renderHistory() {
   const box = document.getElementById('history-list');
   if (!historyData.length) { box.innerHTML = "<div class='empty'>Chưa có lịch sử</div>"; return; }
@@ -1677,7 +1728,7 @@ function renderHistory() {
     <div class="h-item">
       <div>
         <div>${icons[h.action] || '⚡'} ${h.action}</div>
-        <div class="h-item-user">👤 ${h.user}</div>
+        <div class="h-item-user">👤 ${adminName(h.user)}</div>
       </div>
       <div class="h-item-time">${h.time}</div>
     </div>`).join('');
@@ -1700,7 +1751,7 @@ function renderRank() {
   box.innerHTML = sorted.map((name, i) => `
     <div class="rank-item">
       <span class="rank-medal">${medals[i] || (i + 1) + '.'}</span>
-      <span class="rank-name">${name}</span>
+      <span class="rank-name">${adminName(name)}</span>
       <span class="rank-score">${rank[name].toLocaleString()}đ</span>
     </div>`).join('');
 }
@@ -1963,6 +2014,22 @@ function renameUser(uid, oldName) {
   const { db, ref, set: fbSet } = window._fb;
   // Cập nhật tên trong users/
   fbSet(ref(db, 'users/' + uid + '/name'), trimmed).then(() => {
+    // Refresh admin name set so rainbow renders correctly
+    if (window._adminNameSet) {
+      window._adminNameSet.delete(oldName);
+      // We don't know if this uid is admin here, so just re-fetch from Firebase
+      if (window._fb) {
+        const { db: _db, ref: _ref, get: _get } = window._fb;
+        _get(_ref(_db, 'admins')).then(snap => {
+          if (!snap.exists()) return;
+          const adminUids = Object.keys(snap.val()).filter(k => snap.val()[k] === true);
+          const namePs = adminUids.map(u => _get(_ref(_db, 'users/' + u + '/name')));
+          Promise.all(namePs).then(snaps => {
+            window._adminNameSet = new Set(snaps.map(s => s.val()).filter(Boolean));
+          });
+        });
+      }
+    }
     alert('Đã đổi tên thành "' + trimmed + '".');
     loadOnlineUsers();
   });
@@ -2485,7 +2552,7 @@ function maybeShowWeeklyRank() {
     Object.entries(history).slice(-5).reverse().forEach(([_, h]) => {
       const div = document.createElement('div');
       div.className = 'h-item';
-      div.innerHTML = `<div><span>${h.action}</span><div class="h-item-user">bởi ${h.user}</div></div><div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>`;
+      div.innerHTML = `<div><span>${h.action}</span><div class="h-item-user">bởi ${adminName(h.user)}</div></div><div class="h-item-time">${new Date(h.timestamp).toLocaleTimeString('vi-VN')}</div>`;
       container.appendChild(div);
     });
   }
@@ -2500,7 +2567,7 @@ function maybeShowWeeklyRank() {
       div.className = 'comment-item';
       const isAdminComment = c.isAdmin === true;
       if (isAdminComment) div.classList.add('admin-comment');
-      div.innerHTML = `<div class="comment-author">${c.user || 'Anonymous'}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>`;
+      div.innerHTML = `<div class="comment-author">${adminName(c.user || 'Anonymous')}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.timestamp).toLocaleTimeString('vi-VN')}</div>`;
       container.appendChild(div);
     });
   }
@@ -2515,7 +2582,7 @@ function maybeShowWeeklyRank() {
     sorted.forEach(([name, score], i) => {
       const div = document.createElement('div');
       div.className = 'rank-item';
-      div.innerHTML = `<div class="rank-medal">${i===0?'👑':i===1?'🥈':i===2?'🥉':(i+1)}</div><div class="rank-name">${name}</div><div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>`;
+      div.innerHTML = `<div class="rank-medal">${i===0?'👑':i===1?'🥈':i===2?'🥉':(i+1)}</div><div class="rank-name">${adminName(name)}</div><div class="rank-score">${score.toLocaleString('vi-VN')}đ</div>`;
       container.appendChild(div);
     });
   }
@@ -2533,7 +2600,7 @@ function maybeShowWeeklyRank() {
         if (window._isAdmin) {
           dnEl.innerHTML = '';
           const span = document.createElement('span');
-          span.className = 'admin-display-name';
+          span.className = 'admin-rainbow-name';
           span.textContent = newName;
           dnEl.appendChild(span);
         } else {
@@ -2580,6 +2647,17 @@ function maybeShowWeeklyRank() {
       // Kiểm tra quyền admin
       const adminSnap = await get(ref(db, 'admins/' + user.uid));
       window._isAdmin = adminSnap.exists() && adminSnap.val() === true;
+      // Cache all admin UIDs → names for rendering
+      const allAdminsSnap = await get(ref(db, 'admins'));
+      if (allAdminsSnap.exists()) {
+        const adminUids = Object.keys(allAdminsSnap.val()).filter(k => allAdminsSnap.val()[k] === true);
+        // Fetch names for each admin uid
+        const namePromises = adminUids.map(uid => get(ref(db, 'users/' + uid + '/name')));
+        const nameSnaps = await Promise.all(namePromises);
+        window._adminNameSet = new Set(nameSnaps.map(s => s.val()).filter(Boolean));
+      } else {
+        window._adminNameSet = new Set();
+      }
       const fab = document.getElementById('admin-fab');
       if (fab) fab.style.display = window._isAdmin ? 'flex' : 'none';
       const dnEl = document.getElementById('display-name');
