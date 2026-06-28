@@ -838,12 +838,12 @@ memberName = window.memberName;
       av.style.display = 'block';
     }
     if (window._fbReady) {
-      const { db, ref, set } = window._fb;
-      // Dùng update thay vì set để không ghi đè cameraTier đã lưu
-      const { update: _update } = window._fb;
-      _update(ref(db, 'users/' + user.uid), {
-        name: user.name, email: user.email,
-        photo: user.photo || '', lastSeen: Date.now(),
+      const { db, ref, get: _get, update: _update } = window._fb;
+      // Chỉ ghi name nếu chưa có trong DB (tránh ghi đè tên do admin đã đổi)
+      _get(ref(db, 'users/' + user.uid + '/name')).then(snap => {
+        const updateData = { email: user.email, photo: user.photo || '', lastSeen: Date.now() };
+        if (!snap.exists() || !snap.val()) updateData.name = user.name;
+        _update(ref(db, 'users/' + user.uid), updateData);
       });
     }
   } else {
