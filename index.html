@@ -2068,13 +2068,6 @@ function sendAnnouncement() {
 }
 
 function resetData(type) {
-  const labels = {
-    history: 'lịch sử bật/tắt',
-    leaderboard: 'bảng xếp hạng',
-    comments: 'toàn bộ comment',
-    all: 'lịch sử + bảng xếp hạng + comment'
-  };
-  if (!confirm('Xác nhận xoá ' + labels[type] + '?\nHành động này không thể hoàn tác!')) return;
   if (!window._fb) return;
   const { db, ref, remove } = window._fb;
   const paths = {
@@ -2083,9 +2076,7 @@ function resetData(type) {
     comments:    ['shared/comments'],
     all:         ['shared/history', 'shared/leaderboard', 'shared/comments']
   };
-  Promise.all(paths[type].map(p => remove(ref(db, p)))).then(() => {
-    alert('Đã xoá ' + labels[type] + '.');
-  });
+  Promise.all(paths[type].map(p => remove(ref(db, p))));
 }
 
 function renameUser(uid, oldName) {
@@ -2119,8 +2110,6 @@ function renameUser(uid, oldName) {
 
 function toggleBanUser(uid, name, isBanned) {
   if (!window._fb) return;
-  const action = isBanned ? 'mở khoá' : 'khoá';
-  if (!confirm('Bạn có chắc muốn ' + action + ' tài khoản "' + name + '"?')) return;
   const { db, ref, set: fbSet } = window._fb;
   fbSet(ref(db, 'users/' + uid + '/banned'), !isBanned).then(() => {
     loadOnlineUsers();
@@ -2129,12 +2118,9 @@ function toggleBanUser(uid, name, isBanned) {
 
 function deleteUserData(uid, name) {
   if (!window._fb) return;
-  if (!confirm('Xoá toàn bộ dữ liệu của "' + name + '"?\n\nLưu ý: Tài khoản vẫn còn trong Firebase Auth, người dùng vẫn đăng nhập được nhưng sẽ mất hết dữ liệu.')) return;
-  const { db, ref, remove: fbRemove, set: fbSet } = window._fb;
-  // Xoá data người dùng + đánh dấu deleted
+  const { db, ref, remove: fbRemove } = window._fb;
   fbRemove(ref(db, 'users/' + uid)).then(() => {
     loadOnlineUsers();
-    alert('Đã xoá dữ liệu của "' + name + '".');
   });
 }
 
