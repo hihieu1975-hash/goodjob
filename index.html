@@ -612,27 +612,43 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
     #ff0000, #ff7700, #ffee00, #00ff00,
     #00aaff, #8800ff, #ff00cc, #ff0000
   );
-  background-size: 300% 300%;
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: rainbowShift 3s linear infinite;
   font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 8px;
+  /* Rainbow border via outline trick */
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.15),
+    inset 0 0 0 2px rgba(255,255,255,0.08);
+  /* Animated border using pseudo-element */
+}
+.admin-rainbow-name::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    #ff0000, #ff7700, #ffee00, #00ff00,
+    #00aaff, #8800ff, #ff00cc, #ff0000
+  );
+  background-size: 300% 100%;
+  animation: rainbowShift 3s linear infinite;
+  z-index: -1;
+  opacity: 0.85;
 }
 .admin-rainbow-name::after {
   content: '';
   position: absolute;
-  top: -10%; left: -70%;
-  width: 35%; height: 120%;
-  background: linear-gradient(
-    105deg,
-    transparent,
-    rgba(255,255,255,0.55),
-    transparent
-  );
-  animation: shimmerSweep 2.5s ease infinite;
-  pointer-events: none;
-  border-radius: 4px;
+  inset: 1px;
+  border-radius: 7px;
+  background: rgba(10, 14, 28, 0.82);
+  z-index: -1;
 }
 
 /* Admin display name in header */
@@ -2635,8 +2651,11 @@ function maybeShowWeeklyRank() {
   onAuthStateChanged(auth, async user => {
     if (window._registeringInProgress) return; // bỏ qua khi đang đăng ký
     if (user) {
-      currentUser = { uid: user.uid, name: user.displayName || user.email };
-      window.currentUser = currentUser; // expose để confirmPay (non-module) dùng đúng uid
+      // Ưu tiên tên từ Database (admin có thể đã đổi tên)
+      const dbNameSnap = await get(ref(db, 'users/' + user.uid + '/name'));
+      const resolvedName = (dbNameSnap.exists() && dbNameSnap.val()) ? dbNameSnap.val() : (user.displayName || user.email);
+      currentUser = { uid: user.uid, name: resolvedName };
+      window.currentUser = currentUser;
       // Kiểm tra bị khoá
       const bannedSnap = await get(ref(db, 'users/' + user.uid + '/banned'));
       if (bannedSnap.exists() && bannedSnap.val() === true) {
@@ -2651,7 +2670,6 @@ function maybeShowWeeklyRank() {
       const allAdminsSnap = await get(ref(db, 'admins'));
       if (allAdminsSnap.exists()) {
         const adminUids = Object.keys(allAdminsSnap.val()).filter(k => allAdminsSnap.val()[k] === true);
-        // Fetch names for each admin uid
         const namePromises = adminUids.map(uid => get(ref(db, 'users/' + uid + '/name')));
         const nameSnaps = await Promise.all(namePromises);
         window._adminNameSet = new Set(nameSnaps.map(s => s.val()).filter(Boolean));
@@ -2664,7 +2682,7 @@ function maybeShowWeeklyRank() {
       if (window._isAdmin) {
         dnEl.innerHTML = '';
         const span = document.createElement('span');
-        span.className = 'admin-display-name';
+        span.className = 'admin-rainbow-name';
         span.textContent = currentUser.name;
         dnEl.appendChild(span);
       } else {
