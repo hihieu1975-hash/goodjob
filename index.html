@@ -605,13 +605,6 @@ memberName = window.memberName;
     background: url("hinh-anh-ho-guom-ve-dem-2k-dep_082442567.jpg") center/cover no-repeat;
   }
 
-  #login-screen::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 0;
-  }
-
   .login-card { z-index: 1; }
 
   @media (max-width: 768px) {
@@ -620,9 +613,7 @@ memberName = window.memberName;
       background-position: center center;
       align-items: center;
     }
-    #login-screen::before {
-      background: rgba(0,0,0,0.45);
-    }
+
   }
 
   .login-card {
@@ -632,12 +623,12 @@ memberName = window.memberName;
     max-width: 380px;
     width: 92%;
     margin-bottom: 0;
-    background: rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.45);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.12);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
   @media (max-width: 768px) {
