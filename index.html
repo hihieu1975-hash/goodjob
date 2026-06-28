@@ -560,6 +560,162 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
   .unlock-btn { font-size: 0.9rem; padding: 12px; }
   .modal-box { padding: 28px 20px; }
 }
+
+/* ===== ADMIN ===== */
+.comment-item.admin-comment .comment-author {
+  background: linear-gradient(90deg, #22c55e, #4ade80, #22c55e);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: adminNameShine 2s linear infinite;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.comment-item.admin-comment {
+  border: 1px solid rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.07);
+  position: relative;
+}
+.comment-item.admin-comment::before {
+  content: '⚡ ADMIN';
+  position: absolute;
+  top: 6px; right: 8px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #22c55e;
+  opacity: 0.7;
+}
+@keyframes adminNameShine {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Admin banner drop-in */
+#admin-banner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 8888;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, rgba(15,20,40,0.97), rgba(10,30,20,0.97));
+  border-bottom: 1px solid rgba(34,197,94,0.4);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  transform: translateY(-100%);
+  transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+#admin-banner.show { transform: translateY(0); display: block; }
+#admin-banner.hiding { transform: translateY(-100%); }
+.admin-banner-inner {
+  max-width: 900px; margin: auto;
+  display: flex; align-items: center; gap: 12px;
+}
+.admin-banner-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg,#22c55e,#16a34a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 800; color: white; flex-shrink: 0;
+}
+.admin-banner-name {
+  font-size: 0.78rem; font-weight: 800;
+  background: linear-gradient(90deg,#22c55e,#4ade80,#22c55e);
+  background-size: 200% auto;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: adminNameShine 2s linear infinite;
+}
+.admin-banner-text { font-size: 0.9rem; color: white; flex: 1; }
+.admin-banner-close {
+  background: none; border: none; color: rgba(255,255,255,0.4);
+  font-size: 1.1rem; cursor: pointer; padding: 0 4px; flex-shrink: 0;
+}
+.admin-banner-close:hover { color: white; }
+
+/* Maintenance overlay */
+#maintenance-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 7777;
+  pointer-events: none;
+}
+#maintenance-overlay.active { display: block; }
+.maintenance-banner {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 12px; padding: 10px 20px;
+  font-size: 0.82rem; color: #fde68a; font-weight: 600;
+  white-space: nowrap; pointer-events: none;
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* Admin panel button */
+#admin-fab {
+  display: none;
+  position: fixed; bottom: 24px; right: 20px; z-index: 9000;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg,#22c55e,#16a34a);
+  border: none; cursor: pointer; font-size: 1.3rem;
+  box-shadow: 0 4px 20px rgba(34,197,94,0.45);
+  transition: transform 0.15s;
+}
+#admin-fab:hover { transform: scale(1.1); }
+
+/* Online users modal */
+#modal-admin {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#modal-admin.show { display: flex; }
+.admin-modal-box {
+  background: rgba(15,20,40,0.97);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px; padding: 28px 24px;
+  width: 92%; max-width: 420px;
+  max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.admin-modal-box h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+.admin-section-label {
+  font-size: 0.68rem; color: rgba(255,255,255,0.4);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 16px 0 8px;
+}
+.online-user-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 6px; font-size: 0.88rem;
+}
+.online-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #22c55e; flex-shrink: 0;
+  box-shadow: 0 0 6px #22c55e;
+}
+.online-user-name { flex: 1; font-weight: 600; }
+.online-user-time { font-size: 0.72rem; color: rgba(255,255,255,0.4); }
+.admin-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.admin-toggle-row:last-child { border-bottom: none; }
+.admin-toggle-label { font-size: 0.88rem; }
+.admin-toggle-sub { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top:2px; }
+.admin-switch {
+  width: 44px; height: 26px; border-radius: 13px;
+  border: none; cursor: pointer; position: relative;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.admin-switch.on { background: #22c55e; }
+.admin-switch.off { background: rgba(255,255,255,0.2); }
+.admin-switch::after {
+  content:''; position:absolute; width:18px; height:18px;
+  border-radius:50%; background:white; top:4px; transition:left 0.2s;
+}
+.admin-switch.on::after { left:22px; }
+.admin-switch.off::after { left:4px; }
 </style>
 </head>
 <body>
@@ -845,7 +1001,7 @@ memberName = window.memberName;
   <!-- PROFILE -->
   <div style="margin-top:20px; background:rgba(15,20,40,0.72); backdrop-filter:none; -webkit-backdrop-filter:none; border:1px solid rgba(255,255,255,0.10); border-radius:24px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.35);">
     <div class="accordion-header" onclick="toggleAccordion('author')">
-      <h3 style="font-size:1rem; font-weight:600;">Về tác giả — Mã Văn Hiếu</h3>
+      <h3 style="font-size:1rem; font-weight:600;">👨‍💻 Về tác giả — Mã Văn Hiếu</h3>
       <span class="accordion-arrow" id="arrow-author">▼</span>
     </div>
     <div class="accordion-body" id="body-author">
@@ -1436,6 +1592,7 @@ function confirmForce() {
 }
 
 function applyControl(cmd) {
+  if (window._maintenanceOn) return;
   currentMode = cmd;
   const configs = {
     on:   { text: 'Đèn đang bật',      dotClass: 'dot-on',   btnActive: 'active-on',   histLabel: 'Bật đèn',  addPt: true },
@@ -1516,19 +1673,22 @@ function renderRank() {
 function sendComment() {
   const input = document.getElementById('comment-input');
   if (!input.value.trim()) return;
-  commentData.unshift({ name: memberName, text: input.value.trim(), time: new Date().toLocaleTimeString('vi-VN') });
+  if (window._maintenanceOn) return;
+  const isAdmin = window._isAdmin === true;
+  commentData.unshift({ name: memberName, text: input.value.trim(), time: new Date().toLocaleTimeString('vi-VN'), isAdmin });
   if (commentData.length > 50) commentData.pop();
   _fbSaveComments();
   input.value = '';
   renderComments();
+  if (isAdmin) showAdminBanner(memberName, commentData[0].text);
 }
 
 function renderComments() {
   const box = document.getElementById('comments');
   if (!commentData.length) { box.innerHTML = "<div class='empty'>Chưa có lời nhắn</div>"; return; }
   box.innerHTML = commentData.map(c => `
-    <div class="comment-item">
-      <div class="comment-author">${c.name}</div>
+    <div class="comment-item${c.isAdmin ? ' admin-comment' : ''}">
+      <div class="comment-author">${c.name}${c.isAdmin ? ' ✦' : ''}</div>
       <div class="comment-text">${c.text}</div>
       <div class="comment-time">${c.time}</div>
     </div>`).join('');
@@ -1725,6 +1885,116 @@ window.addEventListener('load', () => {
     authorBody.style.height = '0px';
   }
 });
+
+/* ===== ADMIN LOGIC ===== */
+window._isAdmin = false;
+window._maintenanceOn = false;
+
+function setMaintenanceUI(on) {
+  window._maintenanceOn = on;
+  const overlay = document.getElementById('maintenance-overlay');
+  const sw = document.getElementById('maintenance-switch');
+  overlay.classList.toggle('active', on);
+  if (sw) { sw.className = 'admin-switch ' + (on ? 'on' : 'off'); }
+  // Disable/enable interactive elements
+  const els = ['btn-on','btn-off','btn-auto','comment-input'];
+  els.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = on;
+  });
+  document.querySelectorAll('.send-btn, .unlock-btn, .ctrl-btn').forEach(el => {
+    el.disabled = on;
+    el.style.opacity = on ? '0.4' : '';
+    el.style.pointerEvents = on ? 'none' : '';
+  });
+}
+
+function toggleMaintenance() {
+  const next = !window._maintenanceOn;
+  setMaintenanceUI(next);
+  // Lưu vào Firebase
+  if (window._fbReady) {
+    const { db, ref, set } = window._fb;
+    set(ref(db, 'shared/maintenance'), next);
+  }
+}
+
+function openAdminPanel() {
+  document.getElementById('modal-admin').classList.add('show');
+  loadOnlineUsers();
+}
+function closeAdminPanel() {
+  document.getElementById('modal-admin').classList.remove('show');
+}
+
+function loadOnlineUsers() {
+  if (!window._fbReady) return;
+  const { db, ref, get: fbGet } = window._fb;
+  fbGet(ref(db, 'users')).then(snap => {
+    const users = snap.val() || {};
+    const now = Date.now();
+    const online = [], all = [];
+    Object.entries(users).forEach(([uid, u]) => {
+      if (!u.name) return;
+      const ago = now - (u.lastSeen || 0);
+      const isOnline = ago < 5 * 60 * 1000; // 5 phút
+      const timeStr = ago < 60000 ? 'Vừa xong'
+        : ago < 3600000 ? Math.floor(ago/60000) + ' phút trước'
+        : Math.floor(ago/3600000) + ' giờ trước';
+      if (isOnline) online.push({ name: u.name, timeStr });
+      all.push({ name: u.name, timeStr, isOnline });
+    });
+
+    const onlineBox = document.getElementById('online-users-list');
+    onlineBox.innerHTML = online.length ? online.map(u => `
+      <div class="online-user-item">
+        <div class="online-dot"></div>
+        <div class="online-user-name">${u.name}</div>
+        <div class="online-user-time">${u.timeStr}</div>
+      </div>`).join('') : '<div class="empty">Không có ai online</div>';
+
+    const allBox = document.getElementById('all-users-list');
+    allBox.innerHTML = all.length ? all.map(u => `
+      <div class="online-user-item">
+        <div class="online-dot" style="background:${u.isOnline?'#22c55e':'rgba(255,255,255,0.2)'}; box-shadow:${u.isOnline?'0 0 6px #22c55e':'none'}"></div>
+        <div class="online-user-name">${u.name}</div>
+        <div class="online-user-time">${u.timeStr}</div>
+      </div>`).join('') : '<div class="empty">Chưa có tài khoản</div>';
+  });
+}
+
+// Admin banner
+let _bannerTimer = null;
+function showAdminBanner(name, text) {
+  const banner = document.getElementById('admin-banner');
+  document.getElementById('admin-banner-text').textContent = text;
+  banner.style.display = 'block';
+  // Force reflow
+  banner.offsetHeight;
+  banner.classList.add('show');
+  if (_bannerTimer) clearTimeout(_bannerTimer);
+  _bannerTimer = setTimeout(dismissAdminBanner, 6000);
+}
+function dismissAdminBanner() {
+  const banner = document.getElementById('admin-banner');
+  banner.classList.add('hiding');
+  setTimeout(() => {
+    banner.classList.remove('show','hiding');
+    banner.style.display = 'none';
+  }, 400);
+}
+
+// Swipe up to dismiss banner
+(function() {
+  let startY = 0;
+  const el = document.getElementById('admin-banner');
+  if (!el) return;
+  el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (startY - e.changedTouches[0].clientY > 30) dismissAdminBanner();
+  }, { passive: true });
+})();
+
 /* ===== AUTH ===== */
 /* ===== FIREBASE SYNC ===== */
 window._leaderboard = {};
@@ -2152,12 +2422,26 @@ function maybeShowWeeklyRank() {
 
   // Realtime
   function setupRealtime() {
+    onValue(ref(db, 'shared/maintenance'), snap => {
+      const on = snap.val() === true;
+      if (typeof setMaintenanceUI === 'function') setMaintenanceUI(on);
+    });
     onValue(ref(db, 'shared/controls'), snap => {
       const data = snap.val();
       if (data) document.getElementById('status-text').textContent = data.state === 'on' ? 'Đèn đang bật' : 'Đèn đang tắt';
     });
     onValue(ref(db, 'shared/history'), snap => renderHistory(snap.val()));
-    onValue(ref(db, 'shared/comments'), snap => renderComments(snap.val()));
+    onValue(ref(db, 'shared/comments'), snap => {
+      const data = snap.val();
+      renderComments(data);
+      // Nếu comment mới nhất là của admin → show banner cho mọi người
+      if (data && Array.isArray(data) && data.length > 0) {
+        const latest = data[0];
+        if (latest && latest.isAdmin && !window._isAdmin) {
+          if (typeof showAdminBanner === 'function') showAdminBanner(latest.name, latest.text);
+        }
+      }
+    });
     onValue(ref(db, 'shared/leaderboard'), snap => renderLeaderboard(snap.val()));
   }
 
@@ -2167,6 +2451,11 @@ function maybeShowWeeklyRank() {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
       window.currentUser = currentUser; // expose để confirmPay (non-module) dùng đúng uid
+      // Kiểm tra quyền admin
+      const adminSnap = await get(ref(db, 'admins/' + user.uid));
+      window._isAdmin = adminSnap.exists() && adminSnap.val() === true;
+      const fab = document.getElementById('admin-fab');
+      if (fab) fab.style.display = window._isAdmin ? 'flex' : 'none';
       document.getElementById('display-name').textContent = currentUser.name;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
@@ -2211,5 +2500,51 @@ function maybeShowWeeklyRank() {
     }
   });
 </script>
+
+<!-- Admin Banner -->
+<div id="admin-banner">
+  <div class="admin-banner-inner">
+    <div class="admin-banner-avatar">A</div>
+    <div>
+      <div class="admin-banner-name">ADMIN</div>
+    </div>
+    <div class="admin-banner-text" id="admin-banner-text"></div>
+    <button class="admin-banner-close" onclick="dismissAdminBanner()">✕</button>
+  </div>
+</div>
+
+<!-- Maintenance Overlay -->
+<div id="maintenance-overlay">
+  <div class="maintenance-banner">🔧 Hệ thống đang bảo trì — Các chức năng tạm thời bị khoá</div>
+</div>
+
+<!-- Admin FAB -->
+<button id="admin-fab" onclick="openAdminPanel()" title="Admin Panel">⚙️</button>
+
+<!-- Admin Modal -->
+<div id="modal-admin">
+  <div class="admin-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <h2>⚙️ Admin Panel</h2>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.2rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);margin-bottom:4px;">Chỉ admin mới thấy panel này</div>
+
+    <div class="admin-section-label">🟢 Đang online</div>
+    <div id="online-users-list"><div class="empty">Đang tải...</div></div>
+
+    <div class="admin-section-label">👥 Tất cả tài khoản</div>
+    <div id="all-users-list"><div class="empty">Đang tải...</div></div>
+
+    <div class="admin-section-label">🔧 Bảo trì</div>
+    <div class="admin-toggle-row">
+      <div>
+        <div class="admin-toggle-label">Chế độ bảo trì</div>
+        <div class="admin-toggle-sub">Khoá BẬT/TẮT/AUTO, gửi tin, nạp tiền</div>
+      </div>
+      <button class="admin-switch off" id="maintenance-switch" onclick="toggleMaintenance()"></button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
