@@ -1973,8 +1973,8 @@ function maybeShowWeeklyRank() {
 
 </div> <!-- /#main-app -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, push, onValue }
+  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, push, onValue, update, remove }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1989,11 +1989,11 @@ function maybeShowWeeklyRank() {
     appId: "1:187037669957:web:7a487df69ac5b18fcbe12c"
   };
 
-  const app = initializeApp(firebaseConfig);
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  window._fb = { ref, set, get, push, onValue, db };
+  window._fb = { ref, set, get, push, onValue, update, remove, db };
   window._auth = { auth, signOut: () => signOut(auth) };
 
   let currentUser = null;
