@@ -609,46 +609,52 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
   display: inline-block;
   background: linear-gradient(
     90deg,
-    #ff0000, #ff7700, #ffee00, #00ff00,
-    #00aaff, #8800ff, #ff00cc, #ff0000
+    #ff6b6b, #ffa94d, #ffe066, #69db7c,
+    #74c0fc, #b197fc, #f783ac, #ff6b6b
   );
   background-size: 300% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: rainbowShift 3s linear infinite;
+  animation: rainbowShift 4s linear infinite;
   font-weight: 800;
-  padding: 2px 10px;
-  border-radius: 8px;
-  /* Rainbow border via outline trick */
-  outline: 2px solid transparent;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,0.15),
-    inset 0 0 0 2px rgba(255,255,255,0.08);
-  /* Animated border using pseudo-element */
+  padding: 1px 8px 2px;
+  border-radius: 6px;
 }
 .admin-rainbow-name::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: 10px;
+  inset: 0;
+  border-radius: 6px;
+  padding: 1.5px;
   background: linear-gradient(
     90deg,
-    #ff0000, #ff7700, #ffee00, #00ff00,
-    #00aaff, #8800ff, #ff00cc, #ff0000
+    #ff6b6b, #ffa94d, #ffe066, #69db7c,
+    #74c0fc, #b197fc, #f783ac, #ff6b6b
   );
   background-size: 300% 100%;
-  animation: rainbowShift 3s linear infinite;
-  z-index: -1;
-  opacity: 0.85;
+  animation: rainbowShift 4s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.7;
 }
 .admin-rainbow-name::after {
   content: '';
   position: absolute;
-  inset: 1px;
-  border-radius: 7px;
-  background: rgba(10, 14, 28, 0.82);
-  z-index: -1;
+  top: 0; left: -60%;
+  width: 30%; height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgba(255,255,255,0.18),
+    transparent
+  );
+  animation: shimmerSweep 3s ease infinite;
+  pointer-events: none;
+  border-radius: 6px;
 }
 
 /* Admin display name in header */
