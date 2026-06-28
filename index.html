@@ -643,17 +643,18 @@ memberName = window.memberName;
   .login-input {
     width: 100%; padding: 13px 16px; margin-bottom: 10px;
     background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.20);
+    border: 1px solid rgba(255,255,255,0.45);
     border-radius: 12px; color: white; font-size: 0.9rem;
     outline: none; display: block;
     transition: border-color 0.2s;
   }
-  .login-input:focus { border-color: rgba(255,255,255,0.45); }
-  .login-input::placeholder { color: rgba(255,255,255,0.4); }
+  .login-input:focus { border-color: rgba(255,255,255,0.80); }
+  .login-input::placeholder { color: rgba(255,255,255,0.65); }
 
   .login-tab-bar {
-    display: flex; background: rgba(255,255,255,0.07);
+    display: flex; background: rgba(255,255,255,0.12);
     border-radius: 12px; padding: 4px; margin-bottom: 22px;
+    border: 1px solid rgba(255,255,255,0.25);
   }
   .login-tab {
     flex: 1; padding: 10px; border: none; border-radius: 9px;
@@ -661,10 +662,10 @@ memberName = window.memberName;
     transition: all 0.2s;
   }
   .login-tab.active {
-    background: rgba(255,255,255,0.18); color: white;
+    background: rgba(255,255,255,0.28); color: white;
   }
   .login-tab.inactive {
-    background: transparent; color: rgba(255,255,255,0.4);
+    background: transparent; color: rgba(255,255,255,0.65);
   }
 
   .login-btn {
@@ -695,7 +696,7 @@ memberName = window.memberName;
   <div class="login-card">
 
     <div style="font-size:1.6rem; font-weight:800; color:white; letter-spacing:0.02em; margin-bottom:4px;">Welcome Home</div>
-    <div style="font-size:0.75rem; color:rgba(255,255,255,0.45); letter-spacing:0.08em; margin-bottom:24px;">VÌ MỘT VIỆT NAM THỊNH VƯỢNG</div>
+    <div style="font-size:0.75rem; color:rgba(255,255,255,0.75); letter-spacing:0.08em; margin-bottom:24px;">VÌ MỘT VIỆT NAM THỊNH VƯỢNG</div>
 
     <div class="login-divider"></div>
 
@@ -721,7 +722,7 @@ memberName = window.memberName;
       <button class="login-btn login-btn-secondary" onclick="doRegister()">Tạo tài khoản</button>
     </div>
 
-    <div style="font-size:0.68rem; color:rgba(255,255,255,0.25); margin-top:18px; line-height:1.6;">
+    <div style="font-size:0.68rem; color:rgba(255,255,255,0.50); margin-top:18px; line-height:1.6;">
       Bằng cách đăng nhập, bạn đồng ý với điều khoản sử dụng<br>hệ thống điều khiển nhà thông minh này.
     </div>
 
