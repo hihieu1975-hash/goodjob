@@ -819,6 +819,23 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 }
 .admin-switch.on::after { left:22px; }
 .admin-switch.off::after { left:4px; }
+.admin-reset-btn {
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.08);
+  color: rgba(255,120,120,0.85);
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.admin-reset-btn:hover {
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(239,68,68,0.7);
+}
 </style>
 </head>
 <body>
@@ -2030,6 +2047,27 @@ function toggleMaintenance() {
   }
 }
 
+function resetData(type) {
+  const labels = {
+    history: 'lịch sử bật/tắt',
+    leaderboard: 'bảng xếp hạng',
+    comments: 'toàn bộ comment',
+    all: 'lịch sử + bảng xếp hạng + comment'
+  };
+  if (!confirm('Xác nhận xoá ' + labels[type] + '?\nHành động này không thể hoàn tác!')) return;
+  if (!window._fb) return;
+  const { db, ref, remove } = window._fb;
+  const paths = {
+    history:     ['shared/history'],
+    leaderboard: ['shared/leaderboard'],
+    comments:    ['shared/comments'],
+    all:         ['shared/history', 'shared/leaderboard', 'shared/comments']
+  };
+  Promise.all(paths[type].map(p => remove(ref(db, p)))).then(() => {
+    alert('Đã xoá ' + labels[type] + '.');
+  });
+}
+
 function renameUser(uid, oldName) {
   const newName = prompt('Đổi tên hiển thị cho "' + oldName + '":', oldName);
   if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
@@ -2782,6 +2820,38 @@ function maybeShowWeeklyRank() {
         <div class="admin-toggle-sub">Khoá BẬT/TẮT/AUTO, gửi tin, nạp tiền</div>
       </div>
       <button class="admin-switch off" id="maintenance-switch" onclick="toggleMaintenance()"></button>
+    </div>
+
+    <div class="admin-section-label">🗑️ Reset dữ liệu</div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:4px;">
+      <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
+        <div>
+          <div class="admin-toggle-label">Lịch sử bật/tắt</div>
+          <div class="admin-toggle-sub">Xoá toàn bộ log điều khiển đèn</div>
+        </div>
+        <button onclick="resetData('history')" class="admin-reset-btn">Xoá</button>
+      </div>
+      <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
+        <div>
+          <div class="admin-toggle-label">Bảng xếp hạng</div>
+          <div class="admin-toggle-sub">Reset điểm tất cả thành viên về 0</div>
+        </div>
+        <button onclick="resetData('leaderboard')" class="admin-reset-btn">Xoá</button>
+      </div>
+      <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
+        <div>
+          <div class="admin-toggle-label">Nhật ký / Comment</div>
+          <div class="admin-toggle-sub">Xoá toàn bộ tin nhắn</div>
+        </div>
+        <button onclick="resetData('comments')" class="admin-reset-btn">Xoá</button>
+      </div>
+      <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
+        <div>
+          <div class="admin-toggle-label" style="color:#fca5a5;">⚠️ Reset tất cả</div>
+          <div class="admin-toggle-sub">Xoá lịch sử + BXH + comment cùng lúc</div>
+        </div>
+        <button onclick="resetData('all')" class="admin-reset-btn" style="border-color:rgba(239,68,68,0.6);color:#fca5a5;background:rgba(239,68,68,0.12);">Reset</button>
+      </div>
     </div>
   </div>
 </div>
