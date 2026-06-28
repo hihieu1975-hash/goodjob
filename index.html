@@ -652,14 +652,30 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 /* Admin panel button */
 #admin-fab {
   display: none;
-  position: fixed; bottom: 24px; right: 20px; z-index: 9000;
-  width: 48px; height: 48px; border-radius: 50%;
-  background: linear-gradient(135deg,#22c55e,#16a34a);
-  border: none; cursor: pointer; font-size: 1.3rem;
-  box-shadow: 0 4px 20px rgba(34,197,94,0.45);
-  transition: transform 0.15s;
+  position: fixed; top: 20px; right: 20px; z-index: 9000;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: rgba(15,20,40,0.85);
+  border: 1px solid rgba(34,197,94,0.5);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #86efac;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 16px rgba(34,197,94,0.25), 0 2px 12px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
-#admin-fab:hover { transform: scale(1.1); }
+#admin-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 24px rgba(34,197,94,0.4), 0 4px 20px rgba(0,0,0,0.5);
+  border-color: rgba(34,197,94,0.8);
+}
 
 /* Online users modal */
 #modal-admin {
@@ -2269,6 +2285,7 @@ function maybeShowWeeklyRank() {
 
   window._fb = { ref, set, get, push, onValue, update, remove, db };
   window._auth = { auth, signOut: () => signOut(auth) };
+  window._fbReady = true;
 
   let currentUser = null;
   window._leaderboard = {};
@@ -2519,7 +2536,7 @@ function maybeShowWeeklyRank() {
 </div>
 
 <!-- Admin FAB -->
-<button id="admin-fab" onclick="openAdminPanel()" title="Admin Panel">⚙️</button>
+<button id="admin-fab" onclick="openAdminPanel()" title="Admin Panel">⚙️ Admin</button>
 
 <!-- Admin Modal -->
 <div id="modal-admin">
