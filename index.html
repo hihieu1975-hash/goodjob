@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <title>🏡 Home</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; touch-action: pan-y; }
@@ -30,7 +32,7 @@ html { overscroll-behavior: none; }
 }
 
 body {
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
   background: #0f1a2e;
   min-height: 100vh;
   padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
@@ -594,88 +596,133 @@ memberName = window.memberName;
 };
 </script>
 <!-- ===== LOGIN SCREEN ===== -->
-<div id="login-screen" style="
-  position:fixed; inset:0; z-index:9999;
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg, #0f0a1e 0%, #1a0a2e 50%, #0a0f1e 100%);
-">
-  <!-- bg particles -->
-  <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none;">
-    <div style="position:absolute; top:15%; left:20%; width:300px; height:300px; border-radius:50%;
-      background:radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);"></div>
-    <div style="position:absolute; bottom:20%; right:15%; width:250px; height:250px; border-radius:50%;
-      background:radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%);"></div>
-  </div>
+<style>
+  #login-screen * { box-sizing: border-box; }
 
-  <div style="position:relative; text-align:center; padding:48px 36px; max-width:360px; width:90%;
-    background:rgba(255,255,255,0.04); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
-    border:1px solid rgba(255,255,255,0.08); border-radius:28px;
-    box-shadow:0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);">
+  #login-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: url("hinh-anh-ho-guom-ve-dem-2k-dep_082442567.jpg") center/cover no-repeat;
+  }
 
-    <div style="font-size:3rem; margin-bottom:16px;">🏡</div>
-    <div style="font-size:1.5rem; font-weight:900; color:white; letter-spacing:0.04em; margin-bottom:6px;">Welcome Home</div>
-    <div style="font-size:0.8rem; color:rgba(255,255,255,0.35); margin-bottom:36px; letter-spacing:0.06em;">
-      VÌ MỘT VIỆT NAM THỊNH VƯỢNG
-    </div>
+  @media (max-width: 768px) {
+    #login-screen {
+      background-image: url("hinh-thap-rua-o-ha-noi.jpg");
+      background-position: center top;
+      align-items: flex-end;
+    }
+  }
 
-    <div style="height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent); margin-bottom:28px;"></div>
+  .login-card {
+    position: relative;
+    text-align: center;
+    padding: 40px 32px 32px;
+    max-width: 380px;
+    width: 92%;
+    margin-bottom: 0;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 28px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
 
-    <!-- Tabs -->
-    <div style="display:flex; background:rgba(255,255,255,0.07); border-radius:12px; padding:4px; margin-bottom:24px;">
-      <button id="tab-login" onclick="switchTab('login')" style="flex:1; padding:10px; border:none; border-radius:9px; background:rgba(255,255,255,0.15); color:white; font-weight:700; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">Đăng nhập</button>
-      <button id="tab-register" onclick="switchTab('register')" style="flex:1; padding:10px; border:none; border-radius:9px; background:transparent; color:rgba(255,255,255,0.45); font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">Đăng ký</button>
+  @media (max-width: 768px) {
+    .login-card {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 28px 28px 0 0;
+      padding: 32px 24px 40px;
+      margin-bottom: 0;
+    }
+  }
+
+  .login-input {
+    width: 100%; padding: 13px 16px; margin-bottom: 10px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.20);
+    border-radius: 12px; color: white; font-size: 0.9rem;
+    outline: none; display: block;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: rgba(255,255,255,0.45); }
+  .login-input::placeholder { color: rgba(255,255,255,0.4); }
+
+  .login-tab-bar {
+    display: flex; background: rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 4px; margin-bottom: 22px;
+  }
+  .login-tab {
+    flex: 1; padding: 10px; border: none; border-radius: 9px;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .login-tab.active {
+    background: rgba(255,255,255,0.18); color: white;
+  }
+  .login-tab.inactive {
+    background: transparent; color: rgba(255,255,255,0.4);
+  }
+
+  .login-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .login-btn:hover { transform: translateY(-2px); }
+  .login-btn-primary {
+    background: linear-gradient(135deg, #fde68a, #f59e0b, #fde68a);
+    background-size: 200% 200%;
+    animation: goldShimmer 3s ease infinite;
+    color: #78350f;
+    box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+  }
+  .login-btn-secondary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+  }
+  .login-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    margin: 20px 0;
+  }
+</style>
+
+<div id="login-screen">
+  <div class="login-card">
+
+    <div style="font-size:1.6rem; font-weight:800; color:white; letter-spacing:0.02em; margin-bottom:4px;">Welcome Home</div>
+    <div style="font-size:0.75rem; color:rgba(255,255,255,0.45); letter-spacing:0.08em; margin-bottom:24px;">VÌ MỘT VIỆT NAM THỊNH VƯỢNG</div>
+
+    <div class="login-divider"></div>
+
+    <div class="login-tab-bar">
+      <button id="tab-login" class="login-tab active" onclick="switchTab('login')">Đăng nhập</button>
+      <button id="tab-register" class="login-tab inactive" onclick="switchTab('register')">Đăng ký</button>
     </div>
 
     <!-- Form đăng nhập -->
     <div id="form-login">
-      <input id="login-email" type="email" placeholder="Email" style="
-        width:100%; padding:13px 16px; margin-bottom:12px;
-        background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-        border-radius:12px; color:white; font-size:0.9rem; outline:none; box-sizing:border-box;
-      ">
-      <input id="login-password" type="password" placeholder="Mật khẩu" style="
-        width:100%; padding:13px 16px; margin-bottom:8px;
-        background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-        border-radius:12px; color:white; font-size:0.9rem; outline:none; box-sizing:border-box;
-      ">
-      <div id="login-error" style="color:#ff6b6b; font-size:0.78rem; margin-bottom:12px; min-height:18px;"></div>
-      <button onclick="doLogin()" style="
-        width:100%; padding:14px; border:none; border-radius:12px;
-        background:linear-gradient(135deg,#6366f1,#8b5cf6);
-        color:white; font-weight:700; font-size:0.95rem; cursor:pointer;
-        box-shadow:0 4px 20px rgba(99,102,241,0.4); transition:transform 0.15s;
-      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">Đăng nhập</button>
+      <input id="login-email" class="login-input" type="email" placeholder="Email">
+      <input id="login-password" class="login-input" type="password" placeholder="Mật khẩu">
+      <div id="login-error" style="color:#fca5a5; font-size:0.78rem; margin-bottom:10px; min-height:18px; text-align:left;"></div>
+      <button class="login-btn login-btn-primary" onclick="doLogin()">Đăng nhập</button>
     </div>
 
     <!-- Form đăng ký -->
     <div id="form-register" style="display:none;">
-      <input id="reg-name" type="text" placeholder="Tên hiển thị" style="
-        width:100%; padding:13px 16px; margin-bottom:12px;
-        background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-        border-radius:12px; color:white; font-size:0.9rem; outline:none; box-sizing:border-box;
-      ">
-      <input id="reg-email" type="email" placeholder="Email" style="
-        width:100%; padding:13px 16px; margin-bottom:12px;
-        background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-        border-radius:12px; color:white; font-size:0.9rem; outline:none; box-sizing:border-box;
-      ">
-      <input id="reg-password" type="password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" style="
-        width:100%; padding:13px 16px; margin-bottom:8px;
-        background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
-        border-radius:12px; color:white; font-size:0.9rem; outline:none; box-sizing:border-box;
-      ">
-      <div id="reg-error" style="color:#ff6b6b; font-size:0.78rem; margin-bottom:12px; min-height:18px;"></div>
-      <button onclick="doRegister()" style="
-        width:100%; padding:14px; border:none; border-radius:12px;
-        background:linear-gradient(135deg,#10b981,#059669);
-        color:white; font-weight:700; font-size:0.95rem; cursor:pointer;
-        box-shadow:0 4px 20px rgba(16,185,129,0.4); transition:transform 0.15s;
-      " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">Tạo tài khoản</button>
+      <input id="reg-name" class="login-input" type="text" placeholder="Tên hiển thị">
+      <input id="reg-email" class="login-input" type="email" placeholder="Email">
+      <input id="reg-password" class="login-input" type="password" placeholder="Mật khẩu (tối thiểu 6 ký tự)">
+      <div id="reg-error" style="color:#fca5a5; font-size:0.78rem; margin-bottom:10px; min-height:18px; text-align:left;"></div>
+      <button class="login-btn login-btn-secondary" onclick="doRegister()">Tạo tài khoản</button>
     </div>
 
-    <div style="font-size:0.7rem; color:rgba(255,255,255,0.2); margin-top:20px; line-height:1.6;">
+    <div style="font-size:0.68rem; color:rgba(255,255,255,0.25); margin-top:18px; line-height:1.6;">
       Bằng cách đăng nhập, bạn đồng ý với điều khoản sử dụng<br>hệ thống điều khiển nhà thông minh này.
     </div>
+
   </div>
 </div>
 
@@ -1948,10 +1995,8 @@ function maybeShowWeeklyRank() {
     const isLogin = tab === 'login';
     document.getElementById('form-login').style.display = isLogin ? '' : 'none';
     document.getElementById('form-register').style.display = isLogin ? 'none' : '';
-    document.getElementById('tab-login').style.background = isLogin ? 'rgba(255,255,255,0.15)' : 'transparent';
-    document.getElementById('tab-login').style.color = isLogin ? 'white' : 'rgba(255,255,255,0.45)';
-    document.getElementById('tab-register').style.background = isLogin ? 'transparent' : 'rgba(255,255,255,0.15)';
-    document.getElementById('tab-register').style.color = isLogin ? 'rgba(255,255,255,0.45)' : 'white';
+    document.getElementById('tab-login').className = 'login-tab ' + (isLogin ? 'active' : 'inactive');
+    document.getElementById('tab-register').className = 'login-tab ' + (isLogin ? 'inactive' : 'active');
   };
 
   // Control
