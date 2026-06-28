@@ -682,8 +682,21 @@ memberName = window.memberName;
     box-shadow: 0 4px 20px rgba(245,158,11,0.4);
   }
   .login-btn-secondary {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+    background: linear-gradient(135deg, #818cf8, #6366f1, #818cf8);
+    background-size: 200% 200%;
+    animation: goldShimmer 3s ease infinite;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.45);
+    position: relative;
+    overflow: hidden;
+  }
+  .login-btn-secondary::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -60%;
+    width: 40%; height: 200%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: goldSweep 3s ease infinite;
+    pointer-events: none;
   }
   .login-divider {
     height: 1px;
