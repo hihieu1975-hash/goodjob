@@ -1208,6 +1208,7 @@ memberName = window.memberName;
 
   // Watch auth state
   onAuthStateChanged(auth, user => {
+  if (window._registeringInProgress) return; // bỏ qua khi đang đăng ký
   if (user) {
     window._currentUser = {
       uid:   user.uid,
@@ -2021,10 +2022,11 @@ function maybeShowWeeklyRank() {
     if (!name || !email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
     if (password.length < 6) return errEl.textContent = 'Mật khẩu tối thiểu 6 ký tự.';
     try {
+      window._registeringInProgress = true; // báo onAuthStateChanged bỏ qua
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
-      // Đăng xuất ngay, yêu cầu đăng nhập lại
       await signOut(auth);
+      window._registeringInProgress = false;
       // Xóa form, về tab đăng nhập
       document.getElementById('reg-name').value = '';
       document.getElementById('reg-email').value = '';
@@ -2033,7 +2035,7 @@ function maybeShowWeeklyRank() {
       switchTab('login');
       document.getElementById('login-error').style.color = '#86efac';
       document.getElementById('login-error').textContent = 'Đăng ký thành công! Vui lòng đăng nhập.';
-    } catch(e) { errEl.textContent = e.message; }
+    } catch(e) { window._registeringInProgress = false; errEl.textContent = e.message; }
   };
 
   window.switchTab = function(tab) {
@@ -2160,6 +2162,7 @@ function maybeShowWeeklyRank() {
 
   // Auth state
   onAuthStateChanged(auth, async user => {
+    if (window._registeringInProgress) return; // bỏ qua khi đang đăng ký
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
       window.currentUser = currentUser; // expose để confirmPay (non-module) dùng đúng uid
