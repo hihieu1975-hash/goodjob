@@ -830,13 +830,52 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
   background: rgba(239,68,68,0.08);
   color: rgba(255,120,120,0.85);
   flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, filter 0.1s;
   white-space: nowrap;
 }
 .admin-reset-btn:hover {
   background: rgba(239,68,68,0.18);
   border-color: rgba(239,68,68,0.7);
 }
+.admin-reset-btn:active {
+  transform: translateY(2px) scale(0.96);
+  filter: brightness(0.85);
+}
+.admin-user-btn {
+  padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
+  transition: transform 0.1s, filter 0.1s;
+}
+.admin-user-btn:active {
+  transform: translateY(2px) scale(0.96);
+  filter: brightness(0.85);
+}
+
+/* Toast */
+#admin-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(30,40,60,0.97);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+#admin-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#admin-toast.success { border-color: rgba(34,197,94,0.5); color: #86efac; }
+#admin-toast.error   { border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+#admin-toast.info    { border-color: rgba(129,140,248,0.5); color: #c4b5fd; }
 </style>
 </head>
 <body>
@@ -2067,8 +2106,19 @@ function sendAnnouncement() {
   });
 }
 
-function resetData(type) {
+let _toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('admin-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 2500);
+}
+
+function resetData(type, btn) {
   if (!window._fb) return;
+  const labels = { history: 'lịch sử', leaderboard: 'bảng xếp hạng', comments: 'comment', all: 'tất cả dữ liệu' };
   const { db, ref, remove } = window._fb;
   const paths = {
     history:     ['shared/history'],
@@ -2076,7 +2126,20 @@ function resetData(type) {
     comments:    ['shared/comments'],
     all:         ['shared/history', 'shared/leaderboard', 'shared/comments']
   };
-  Promise.all(paths[type].map(p => remove(ref(db, p))));
+  const origText = btn.textContent;
+  btn.textContent = '✓';
+  btn.style.background = 'rgba(34,197,94,0.2)';
+  btn.style.borderColor = 'rgba(34,197,94,0.5)';
+  btn.style.color = '#86efac';
+  setTimeout(() => {
+    btn.textContent = origText;
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }, 1500);
+  Promise.all(paths[type].map(p => remove(ref(db, p)))).then(() => {
+    showToast('🗑️ Đã xoá ' + labels[type], 'info');
+  });
 }
 
 function renameUser(uid, oldName) {
@@ -2103,7 +2166,7 @@ function renameUser(uid, oldName) {
         });
       }
     }
-    alert('Đã đổi tên thành "' + trimmed + '".');
+    showToast('✏️ Đã đổi tên thành "' + trimmed + '"', 'info');
     loadOnlineUsers();
   });
 }
@@ -2112,6 +2175,7 @@ function toggleBanUser(uid, name, isBanned) {
   if (!window._fb) return;
   const { db, ref, set: fbSet } = window._fb;
   fbSet(ref(db, 'users/' + uid + '/banned'), !isBanned).then(() => {
+    showToast(isBanned ? '✅ Đã mở khoá "' + name + '"' : '🔒 Đã khoá "' + name + '"', isBanned ? 'success' : 'error');
     loadOnlineUsers();
   });
 }
@@ -2120,6 +2184,7 @@ function deleteUserData(uid, name) {
   if (!window._fb) return;
   const { db, ref, remove: fbRemove } = window._fb;
   fbRemove(ref(db, 'users/' + uid)).then(() => {
+    showToast('🗑️ Đã xoá "' + name + '"', 'error');
     loadOnlineUsers();
   });
 }
@@ -2173,21 +2238,21 @@ function loadOnlineUsers() {
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0;">
           <button onclick="renameUser('${u.uid}','${u.name}')"
-            style="padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
-            border:1px solid rgba(129,140,248,0.5);background:rgba(99,102,241,0.1);color:#a5b4fc;">
+            class="admin-user-btn"
+            style="border:1px solid rgba(129,140,248,0.5);background:rgba(99,102,241,0.1);color:#a5b4fc;">
             ✏️
           </button>
           <button onclick="toggleBanUser('${u.uid}','${u.name}',${u.banned})"
-            style="padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
-            border:1px solid ${u.banned?'rgba(34,197,94,0.5)':'rgba(245,158,11,0.5)'};
+            class="admin-user-btn"
+            style="border:1px solid ${u.banned?'rgba(34,197,94,0.5)':'rgba(245,158,11,0.5)'};
             background:${u.banned?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'};
             color:${u.banned?'#86efac':'#fde68a'};">
-            ${u.banned?'Mở':'Khoá'}
+            ${u.banned?'🔓 Mở':'🔒 Khoá'}
           </button>
           <button onclick="deleteUserData('${u.uid}','${u.name}')"
-            style="padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
-            border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.1);color:#fca5a5;">
-            Xoá
+            class="admin-user-btn"
+            style="border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.1);color:#fca5a5;">
+            🗑️ Xoá
           </button>
         </div>
       </div>`).join('') : '<div class="empty">Chưa có tài khoản</div>';
@@ -2798,6 +2863,9 @@ function maybeShowWeeklyRank() {
   });
 </script>
 
+<!-- Toast -->
+<div id="admin-toast"></div>
+
 <!-- Admin Banner -->
 <div id="admin-banner">
   <div class="admin-banner-inner">
@@ -2866,28 +2934,28 @@ function maybeShowWeeklyRank() {
           <div class="admin-toggle-label">Lịch sử bật/tắt</div>
           <div class="admin-toggle-sub">Xoá toàn bộ log điều khiển đèn</div>
         </div>
-        <button onclick="resetData('history')" class="admin-reset-btn">Xoá</button>
+        <button onclick="resetData('history',this)" class="admin-reset-btn">Xoá</button>
       </div>
       <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
         <div>
           <div class="admin-toggle-label">Bảng xếp hạng</div>
           <div class="admin-toggle-sub">Reset điểm tất cả thành viên về 0</div>
         </div>
-        <button onclick="resetData('leaderboard')" class="admin-reset-btn">Xoá</button>
+        <button onclick="resetData('leaderboard',this)" class="admin-reset-btn">Xoá</button>
       </div>
       <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
         <div>
           <div class="admin-toggle-label">Nhật ký / Comment</div>
           <div class="admin-toggle-sub">Xoá toàn bộ tin nhắn</div>
         </div>
-        <button onclick="resetData('comments')" class="admin-reset-btn">Xoá</button>
+        <button onclick="resetData('comments',this)" class="admin-reset-btn">Xoá</button>
       </div>
       <div class="admin-toggle-row" style="border-bottom:none;padding:0;">
         <div>
           <div class="admin-toggle-label" style="color:#fca5a5;">⚠️ Reset tất cả</div>
           <div class="admin-toggle-sub">Xoá lịch sử + BXH + comment cùng lúc</div>
         </div>
-        <button onclick="resetData('all')" class="admin-reset-btn" style="border-color:rgba(239,68,68,0.6);color:#fca5a5;background:rgba(239,68,68,0.12);">Reset</button>
+        <button onclick="resetData('all',this)" class="admin-reset-btn" style="border-color:rgba(239,68,68,0.6);color:#fca5a5;background:rgba(239,68,68,0.12);">Reset</button>
       </div>
     </div>
   </div>
