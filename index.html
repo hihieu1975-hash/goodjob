@@ -1642,10 +1642,11 @@ const tierConfig = {
 function confirmPay(tier, showModal = true) {
   closeModal();
   currentTier = tier;
-  // Lưu vào Firebase theo uid
-  if (currentUser) {
+  // Lưu vào Firebase theo uid — dùng window.currentUser để lấy đúng uid từ module scope
+  const _user = window.currentUser;
+  if (_user && _user.uid) {
     const { db: _db, ref: _ref, set: _set } = window._fb;
-    _set(_ref(_db, 'users/' + currentUser.uid + '/cameraTier'), tier);
+    _set(_ref(_db, 'users/' + _user.uid + '/cameraTier'), tier);
   }
   const t = tierConfig[tier];
   const zone = document.getElementById('camera-zone');
@@ -2159,6 +2160,7 @@ function maybeShowWeeklyRank() {
   onAuthStateChanged(auth, async user => {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
+      window.currentUser = currentUser; // expose để confirmPay (non-module) dùng đúng uid
       document.getElementById('display-name').textContent = currentUser.name;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
@@ -2180,6 +2182,7 @@ function maybeShowWeeklyRank() {
       }
     } else {
       currentUser = null;
+      window.currentUser = null;
       currentTier = 'none';
       resetCamera();
       document.getElementById('login-screen').style.display = 'flex';
