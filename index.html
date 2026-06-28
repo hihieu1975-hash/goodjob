@@ -605,11 +605,23 @@ memberName = window.memberName;
     background: url("hinh-anh-ho-guom-ve-dem-2k-dep_082442567.jpg") center/cover no-repeat;
   }
 
+  #login-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 0;
+  }
+
+  .login-card { z-index: 1; }
+
   @media (max-width: 768px) {
     #login-screen {
       background-image: url("hinh-thap-rua-o-ha-noi.jpg");
       background-position: center center;
       align-items: center;
+    }
+    #login-screen::before {
+      background: rgba(0,0,0,0.45);
     }
   }
 
