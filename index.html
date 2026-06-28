@@ -1639,9 +1639,14 @@ const tierConfig = {
   }
 };
 
-function confirmPay(tier) {
+function confirmPay(tier, showModal = true) {
   closeModal();
   currentTier = tier;
+  // Lưu vào Firebase theo uid
+  if (currentUser) {
+    const { db: _db, ref: _ref, set: _set } = window._fb;
+    _set(_ref(_db, 'users/' + currentUser.uid + '/cameraTier'), tier);
+  }
   const t = tierConfig[tier];
   const zone = document.getElementById('camera-zone');
 
@@ -1658,11 +1663,13 @@ function confirmPay(tier) {
     <button onclick="openModal()" style="margin-top:8px; background:none; border:none; color:rgba(255,255,255,0.3); font-size:0.72rem; cursor:pointer; text-decoration:underline;">Đổi gói</button>
   `;
 
-  const s = successConfigs[tier];
-  document.getElementById('success-icon').textContent = s.icon;
-  document.getElementById('success-title').textContent = s.title;
-  document.getElementById('success-body').innerHTML = s.body;
-  document.getElementById('modal-success').classList.add('show');
+  if (showModal) {
+    const s = successConfigs[tier];
+    document.getElementById('success-icon').textContent = s.icon;
+    document.getElementById('success-title').textContent = s.title;
+    document.getElementById('success-body').innerHTML = s.body;
+    document.getElementById('modal-success').classList.add('show');
+  }
 }
 
 function closeSuccess() {
@@ -2004,6 +2011,16 @@ function maybeShowWeeklyRank() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
+      // Đăng xuất ngay, yêu cầu đăng nhập lại
+      await signOut(auth);
+      // Xóa form, về tab đăng nhập
+      document.getElementById('reg-name').value = '';
+      document.getElementById('reg-email').value = '';
+      document.getElementById('reg-password').value = '';
+      document.getElementById('login-email').value = email;
+      switchTab('login');
+      document.getElementById('login-error').style.color = '#86efac';
+      document.getElementById('login-error').textContent = 'Đăng ký thành công! Vui lòng đăng nhập.';
     } catch(e) { errEl.textContent = e.message; }
   };
 
@@ -2130,14 +2147,25 @@ function maybeShowWeeklyRank() {
   }
 
   // Auth state
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, async user => {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
       document.getElementById('display-name').textContent = currentUser.name;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
+      // Load gói camera đã mua của user này
+      const tierSnap = await get(ref(db, 'users/' + user.uid + '/cameraTier'));
+      if (tierSnap.exists()) {
+        const savedTier = tierSnap.val();
+        if (savedTier && savedTier !== 'none') {
+          confirmPay(savedTier, false); // false = không show modal thành công
+        }
+      }
     } else {
+      currentUser = null;
+      currentTier = 'none';
+      resetCamera();
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('main-app').style.display = 'none';
     }
