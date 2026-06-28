@@ -1944,6 +1944,27 @@ function toggleMaintenance() {
   }
 }
 
+function toggleBanUser(uid, name, isBanned) {
+  if (!window._fb) return;
+  const action = isBanned ? 'mở khoá' : 'khoá';
+  if (!confirm('Bạn có chắc muốn ' + action + ' tài khoản "' + name + '"?')) return;
+  const { db, ref, set: fbSet } = window._fb;
+  fbSet(ref(db, 'users/' + uid + '/banned'), !isBanned).then(() => {
+    loadOnlineUsers();
+  });
+}
+
+function deleteUserData(uid, name) {
+  if (!window._fb) return;
+  if (!confirm('Xoá toàn bộ dữ liệu của "' + name + '"?\n\nLưu ý: Tài khoản vẫn còn trong Firebase Auth, người dùng vẫn đăng nhập được nhưng sẽ mất hết dữ liệu.')) return;
+  const { db, ref, remove: fbRemove, set: fbSet } = window._fb;
+  // Xoá data người dùng + đánh dấu deleted
+  fbRemove(ref(db, 'users/' + uid)).then(() => {
+    loadOnlineUsers();
+    alert('Đã xoá dữ liệu của "' + name + '".');
+  });
+}
+
 function openAdminPanel() {
   document.getElementById('modal-admin').classList.add('show');
   loadOnlineUsers();
@@ -1965,29 +1986,47 @@ function loadOnlineUsers() {
     Object.entries(users).forEach(([uid, u]) => {
       if (!u.name) return;
       const ago = now - (u.lastSeen || 0);
-      const isOnline = ago < 5 * 60 * 1000; // 5 phút
+      const isOnline = ago < 5 * 60 * 1000;
       const timeStr = ago < 60000 ? 'Vừa xong'
         : ago < 3600000 ? Math.floor(ago/60000) + ' phút trước'
         : Math.floor(ago/3600000) + ' giờ trước';
-      if (isOnline) online.push({ name: u.name, timeStr });
-      all.push({ name: u.name, timeStr, isOnline });
+      if (isOnline) online.push({ uid, name: u.name, timeStr });
+      all.push({ uid, name: u.name, timeStr, isOnline, banned: !!u.banned });
     });
 
     const onlineBox = document.getElementById('online-users-list');
-    onlineBox.innerHTML = online.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">` + online.map(u => `
+    onlineBox.innerHTML = online.length ? online.map(u => `
       <div class="online-user-item">
         <div class="online-dot"></div>
         <div class="online-user-name">${u.name}</div>
         <div class="online-user-time">${u.timeStr}</div>
-      </div>`).join('') + `</div>` : '<div class="empty">Không có ai online</div>';
+      </div>`).join('') : '<div class="empty">Không có ai online</div>';
 
     const allBox = document.getElementById('all-users-list');
-    allBox.innerHTML = all.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">` + all.map(u => `
-      <div class="online-user-item">
-        <div class="online-dot" style="background:${u.isOnline?'#22c55e':'rgba(255,255,255,0.2)'}; box-shadow:${u.isOnline?'0 0 6px #22c55e':'none'}"></div>
-        <div class="online-user-name">${u.name}</div>
-        <div class="online-user-time">${u.timeStr}</div>
-      </div>`).join('') + `</div>` : '<div class="empty">Chưa có tài khoản</div>';
+    allBox.innerHTML = all.length ? all.map(u => `
+      <div class="online-user-item" style="justify-content:space-between;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+          <div class="online-dot" style="flex-shrink:0;background:${u.isOnline?'#22c55e':'rgba(255,255,255,0.2)'};box-shadow:${u.isOnline?'0 0 6px #22c55e':'none'};"></div>
+          <div style="min-width:0;">
+            <div class="online-user-name" style="${u.banned?'text-decoration:line-through;opacity:0.4;':''}">${u.name}</div>
+            <div class="online-user-time">${u.timeStr}${u.banned?' · 🚫 Đã khoá':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          <button onclick="toggleBanUser('${u.uid}','${u.name}',${u.banned})"
+            style="padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
+            border:1px solid ${u.banned?'rgba(34,197,94,0.5)':'rgba(245,158,11,0.5)'};
+            background:${u.banned?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'};
+            color:${u.banned?'#86efac':'#fde68a'};">
+            ${u.banned?'Mở khoá':'Khoá'}
+          </button>
+          <button onclick="deleteUserData('${u.uid}','${u.name}')"
+            style="padding:4px 9px;border-radius:7px;font-size:0.7rem;font-weight:700;cursor:pointer;
+            border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.1);color:#fca5a5;">
+            Xoá
+          </button>
+        </div>
+      </div>`).join('') : '<div class="empty">Chưa có tài khoản</div>';
   });
 }
 
@@ -2480,6 +2519,13 @@ function maybeShowWeeklyRank() {
     if (user) {
       currentUser = { uid: user.uid, name: user.displayName || user.email };
       window.currentUser = currentUser; // expose để confirmPay (non-module) dùng đúng uid
+      // Kiểm tra bị khoá
+      const bannedSnap = await get(ref(db, 'users/' + user.uid + '/banned'));
+      if (bannedSnap.exists() && bannedSnap.val() === true) {
+        await signOut(auth);
+        document.getElementById('login-error').textContent = '🚫 Tài khoản của bạn đã bị khoá.';
+        return;
+      }
       // Kiểm tra quyền admin
       const adminSnap = await get(ref(db, 'admins/' + user.uid));
       window._isAdmin = adminSnap.exists() && adminSnap.val() === true;
