@@ -2795,11 +2795,19 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
-    // Unlock audio ngay trong gesture click này
+    // Preload audio ngay trong gesture click — chờ buffer xong
     try {
       window._unlockedAudio = new Audio('welcome.mp3');
       window._unlockedAudio.volume = 1.0;
-      window._unlockedAudio.load();
+      window._unlockedAudio.preload = 'auto';
+      // Mute + play + pause để unlock AudioContext, rồi rewind về đầu
+      window._unlockedAudio.muted = true;
+      const unlockPromise = window._unlockedAudio.play();
+      if (unlockPromise) unlockPromise.then(() => {
+        window._unlockedAudio.pause();
+        window._unlockedAudio.currentTime = 0;
+        window._unlockedAudio.muted = false;
+      }).catch(() => {});
     } catch(e) {}
     try { await signInWithEmailAndPassword(auth, email, password); } 
     catch(e) { errEl.textContent = e.message; }
