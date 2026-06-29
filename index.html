@@ -3071,25 +3071,47 @@ function maybeShowWeeklyRank() {
       setupRealtime();
       // Phát âm thanh chào mừng khi mở màn hình chính
       try {
-        Promise.resolve(window._audioUnlockReady).then(result => {
-          window._audioUnlockReady = null;
-          if (result && result.ctx && result.decoded) {
-            // AudioContext đã unlock + buffer đã decode → play ngay, không delay
-            const src = result.ctx.createBufferSource();
-            src.buffer = result.decoded;
-            src.connect(result.ctx.destination);
-            src.start(0);
-          } else {
-            // Fallback về Audio element
-            const au = new Audio('welcome.mp3');
-            au.volume = 1.0;
-            au.play().catch(() => {
-              const playOnce = () => { au.play(); };
-              document.addEventListener('click', playOnce, { once: true });
-              document.addEventListener('touchstart', playOnce, { once: true });
+        function playWelcome() {
+          const ctx = window._getAudioCtx ? window._getAudioCtx() : null;
+          if (ctx && ctx.state === 'running') {
+            // AudioContext đã unlock (vừa đăng nhập) → dùng luôn
+            Promise.resolve(window._audioUnlockReady).then(result => {
+              window._audioUnlockReady = null;
+              if (result && result.ctx && result.decoded) {
+                const src = result.ctx.createBufferSource();
+                src.buffer = result.decoded;
+                src.connect(result.ctx.destination);
+                src.start(0);
+              } else {
+                // decode lại nếu chưa có buffer
+                fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
+                  const src = ctx.createBufferSource();
+                  src.buffer = decoded;
+                  src.connect(ctx.destination);
+                  src.start(0);
+                }).catch(()=>{});
+              }
             });
+          } else {
+            // Vào thẳng (session còn) → chưa có gesture → chờ click/touch đầu tiên trên app
+            const playOnGesture = () => {
+              const ctx2 = window._getAudioCtx ? window._getAudioCtx() : null;
+              if (ctx2) ctx2.resume();
+              fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>{
+                const c = ctx2 || new (window.AudioContext||window.webkitAudioContext)();
+                return c.decodeAudioData(buf).then(decoded=>{
+                  const src = c.createBufferSource();
+                  src.buffer = decoded;
+                  src.connect(c.destination);
+                  src.start(0);
+                });
+              }).catch(()=>{});
+            };
+            document.addEventListener('click', playOnGesture, { once: true });
+            document.addEventListener('touchstart', playOnGesture, { once: true });
           }
-        });
+        }
+        playWelcome();
       } catch(e) { console.warn('Không phát được âm thanh:', e); }
       // Hiện loading trong khi chờ Firebase
       const zone = document.getElementById('camera-zone');
