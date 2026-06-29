@@ -2828,6 +2828,21 @@ function maybeShowWeeklyRank() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
+      // Phát âm thanh chào mừng khi mở màn hình chính
+      try {
+        const welcomeAudio = new Audio('welcome.mp3');
+        welcomeAudio.volume = 1.0;
+        welcomeAudio.play().catch(() => {
+          // Trình duyệt chặn autoplay → chờ thao tác đầu tiên của user rồi phát
+          const playOnce = () => {
+            welcomeAudio.play();
+            document.removeEventListener('click', playOnce);
+            document.removeEventListener('touchstart', playOnce);
+          };
+          document.addEventListener('click', playOnce, { once: true });
+          document.addEventListener('touchstart', playOnce, { once: true });
+        });
+      } catch(e) { console.warn('Không phát được âm thanh:', e); }
       // Hiện loading trong khi chờ Firebase
       const zone = document.getElementById('camera-zone');
       zone.innerHTML = `<div style="text-align:center; padding:16px; font-size:0.8rem; color:rgba(255,255,255,0.4);">Đang tải...</div>`;
