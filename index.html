@@ -881,32 +881,15 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 <body>
 <script>
 window._onAuthChange = function(user) {
+  // Hàm này chỉ xử lý login-screen visibility
+  // Việc show main-app và trigger boot do onAuthStateChanged đảm nhiệm
+  const ls = document.getElementById('login-screen');
   if (user) {
-    const ls = document.getElementById('login-screen');
+    // Ẩn login-screen ngay (không flash)
     ls.style.display = 'none';
     ls.style.visibility = 'hidden';
     ls.style.zIndex = '-1';
-    document.getElementById('main-app').style.display = 'block';
-    window.memberName = user.name || user.email;
-memberName = window.memberName;
-    localStorage.setItem('member_name', memberName);
-    document.getElementById('display-name').textContent = memberName;
-    if (user.photo) {
-      const av = document.getElementById('user-avatar');
-      av.src = user.photo;
-      av.style.display = 'block';
-    }
-    if (window._fbReady) {
-      const { db, ref, get: _get, update: _update } = window._fb;
-      // Chỉ ghi name nếu chưa có trong DB (tránh ghi đè tên do admin đã đổi)
-      _get(ref(db, 'users/' + user.uid + '/name')).then(snap => {
-        const updateData = { email: user.email, photo: user.photo || '', lastSeen: Date.now() };
-        if (!snap.exists() || !snap.val()) updateData.name = user.name;
-        _update(ref(db, 'users/' + user.uid), updateData);
-      });
-    }
   } else {
-    const ls = document.getElementById('login-screen');
     ls.style.display = 'flex';
     ls.style.visibility = 'visible';
     ls.style.zIndex = '9999';
@@ -1303,7 +1286,7 @@ memberName = window.memberName;
     <div style="margin-top:12px; display:flex; align-items:center; justify-content:center; gap:10px;">
       <img id="user-avatar" src="" style="width:32px; height:32px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); display:none;">
       <span style="font-size:0.9rem; opacity:0.85;">Xin chào, <b id="display-name"></b>!</span>
-      <button onclick="window._auth && window._auth.signOut()" style="padding:4px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:8px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); font-size:0.75rem; cursor:pointer;">Đăng xuất</button>
+      <button onclick="window._justSignedIn=false; localStorage.removeItem('last_active_ts'); window._auth && window._auth.signOut();" style="padding:4px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:8px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); font-size:0.75rem; cursor:pointer;">Đăng xuất</button>
     </div>
   </header>
 
@@ -2810,11 +2793,12 @@ function maybeShowWeeklyRank() {
 
   // Auth
   window.doLogin = async function() {
+    window._justSignedIn = true; // luôn chạy boot khi đăng nhập
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
-    if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
+    if (!email || !password) { window._justSignedIn = false; return errEl.textContent = 'Vui lòng nhập đầy đủ.'; }
     // Dùng AudioContext toàn cục đã được unlock, fetch + decode buffer song song với auth
     try {
       const ctx = window._getAudioCtx();
@@ -3080,14 +3064,20 @@ function maybeShowWeeklyRank() {
       } else {
         dnEl.textContent = currentUser.name;
       }
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('main-app').style.display = 'block';
-      setupRealtime();
-
       // ===== AUTO-LOGOUT & QUICK-RESUME =====
       const TIMEOUT_MS = 10 * 60 * 1000; // 10 phút
       const lastActive = parseInt(localStorage.getItem('last_active_ts') || '0', 10);
       const isQuickResume = (Date.now() - lastActive) < TIMEOUT_MS;
+
+      // QUAN TRỌNG: phải set _skipBoot TRƯỚC khi show main-app
+      // vì MutationObserver fire ngay lập tức khi style.display thay đổi
+      const justSignedIn = window._justSignedIn === true;
+      window._justSignedIn = false;
+      window._skipBoot = (isQuickResume && !justSignedIn);
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      setupRealtime();
 
       (function setupInactivityLogout() {
         let inactivityTimer = null;
@@ -3113,13 +3103,12 @@ function maybeShowWeeklyRank() {
         resetTimer();
       })();
 
-      // Nếu quay lại trong vòng 10 phút → skip boot sequence và nhạc
-      if (isQuickResume) {
-        // Ẩn boot overlay ngay lập tức không cần animation
+      if (isQuickResume && !justSignedIn) {
+        // Đóng tab/trình duyệt rồi vào lại trong 10 phút → skip boot và nhạc
         const bootOverlay = document.getElementById('boot-overlay');
         if (bootOverlay) { bootOverlay.style.display = 'none'; bootOverlay.style.opacity = '0'; }
-        window._skipBoot = true;
       } else {
+        // Đăng nhập mới hoặc đăng xuất rồi đăng nhập lại → luôn chạy boot
         // Phát âm thanh chào mừng khi đăng nhập mới
         try {
           function playWelcome() {
