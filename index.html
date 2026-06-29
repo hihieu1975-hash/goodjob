@@ -915,6 +915,25 @@ memberName = window.memberName;
 };
 </script>
 <!-- ===== LOGIN SCREEN ===== -->
+<script>
+// Tạo AudioContext toàn cục một lần, unlock ngay khi user chạm/click bất kỳ đâu
+(function(){
+  var _ctx = null;
+  function getCtx() {
+    if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return _ctx;
+  }
+  function unlockOnGesture() {
+    var ctx = getCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+  // Unlock khi user tương tác với login screen (keydown, mousedown, touchstart)
+  ['mousedown','touchstart','keydown'].forEach(function(evt){
+    document.addEventListener(evt, unlockOnGesture, { once: false, passive: true });
+  });
+  window._getAudioCtx = getCtx;
+})();
+</script>
 <style>
   #login-screen * { box-sizing: border-box; }
 
@@ -2795,12 +2814,10 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
-    // Unlock AudioContext ngay trong gesture, fetch audio data song song
+    // Dùng AudioContext toàn cục đã được unlock, fetch + decode buffer song song với auth
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Resume ngay trong gesture để unlock
-      ctx.resume();
-      // Fetch + decode song song với Firebase auth
+      const ctx = window._getAudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
       window._audioUnlockReady = fetch('welcome.mp3')
         .then(r => r.arrayBuffer())
         .then(buf => ctx.decodeAudioData(buf))
