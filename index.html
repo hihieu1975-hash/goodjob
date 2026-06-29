@@ -2795,18 +2795,17 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
-    // Preload audio ngay trong gesture click — chờ buffer xong
+    // Unlock AudioContext trong gesture, lưu promise để play thật sau
     try {
-      window._unlockedAudio = new Audio('welcome.mp3');
-      window._unlockedAudio.volume = 1.0;
-      window._unlockedAudio.preload = 'auto';
-      // Mute + play + pause để unlock AudioContext, rồi rewind về đầu
-      window._unlockedAudio.muted = true;
-      const unlockPromise = window._unlockedAudio.play();
-      if (unlockPromise) unlockPromise.then(() => {
-        window._unlockedAudio.pause();
-        window._unlockedAudio.currentTime = 0;
-        window._unlockedAudio.muted = false;
+      const au = new Audio('welcome.mp3');
+      au.volume = 1.0;
+      au.preload = 'auto';
+      au.muted = true;
+      window._unlockedAudio = au;
+      window._audioUnlockReady = au.play().then(() => {
+        au.pause();
+        au.currentTime = 0;
+        au.muted = false;
       }).catch(() => {});
     } catch(e) {}
     try { await signInWithEmailAndPassword(auth, email, password); } 
@@ -3056,19 +3055,23 @@ function maybeShowWeeklyRank() {
       setupRealtime();
       // Phát âm thanh chào mừng khi mở màn hình chính
       try {
-        // Dùng audio đã unlock từ gesture đăng nhập nếu có, không thì tạo mới
         const welcomeAudio = window._unlockedAudio || new Audio('welcome.mp3');
         window._unlockedAudio = null;
         welcomeAudio.volume = 1.0;
-        welcomeAudio.play().catch(() => {
-          // Fallback: chờ click tiếp theo
-          const playOnce = () => {
-            welcomeAudio.play();
-            document.removeEventListener('click', playOnce);
-            document.removeEventListener('touchstart', playOnce);
-          };
-          document.addEventListener('click', playOnce, { once: true });
-          document.addEventListener('touchstart', playOnce, { once: true });
+        // Đợi unlock xong hẳn rồi mới play thật
+        Promise.resolve(window._audioUnlockReady).finally(() => {
+          window._audioUnlockReady = null;
+          welcomeAudio.currentTime = 0;
+          welcomeAudio.muted = false;
+          welcomeAudio.play().catch(() => {
+            const playOnce = () => {
+              welcomeAudio.play();
+              document.removeEventListener('click', playOnce);
+              document.removeEventListener('touchstart', playOnce);
+            };
+            document.addEventListener('click', playOnce, { once: true });
+            document.addEventListener('touchstart', playOnce, { once: true });
+          });
         });
       } catch(e) { console.warn('Không phát được âm thanh:', e); }
       // Hiện loading trong khi chờ Firebase
