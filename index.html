@@ -2795,19 +2795,18 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
-    // Unlock AudioContext trong gesture, lưu promise để play thật sau
+    // Unlock AudioContext ngay trong gesture, fetch audio data song song
     try {
-      const au = new Audio('welcome.mp3');
-      au.volume = 1.0;
-      au.preload = 'auto';
-      au.muted = true;
-      window._unlockedAudio = au;
-      window._audioUnlockReady = au.play().then(() => {
-        au.pause();
-        au.currentTime = 0;
-        au.muted = false;
-      }).catch(() => {});
-    } catch(e) {}
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Resume ngay trong gesture để unlock
+      ctx.resume();
+      // Fetch + decode song song với Firebase auth
+      window._audioUnlockReady = fetch('welcome.mp3')
+        .then(r => r.arrayBuffer())
+        .then(buf => ctx.decodeAudioData(buf))
+        .then(decoded => ({ ctx, decoded }))
+        .catch(() => null);
+    } catch(e) { window._audioUnlockReady = null; }
     try { await signInWithEmailAndPassword(auth, email, password); } 
     catch(e) { errEl.textContent = e.message; }
   };
@@ -3055,23 +3054,24 @@ function maybeShowWeeklyRank() {
       setupRealtime();
       // Phát âm thanh chào mừng khi mở màn hình chính
       try {
-        const welcomeAudio = window._unlockedAudio || new Audio('welcome.mp3');
-        window._unlockedAudio = null;
-        welcomeAudio.volume = 1.0;
-        // Đợi unlock xong hẳn rồi mới play thật
-        Promise.resolve(window._audioUnlockReady).finally(() => {
+        Promise.resolve(window._audioUnlockReady).then(result => {
           window._audioUnlockReady = null;
-          welcomeAudio.currentTime = 0;
-          welcomeAudio.muted = false;
-          welcomeAudio.play().catch(() => {
-            const playOnce = () => {
-              welcomeAudio.play();
-              document.removeEventListener('click', playOnce);
-              document.removeEventListener('touchstart', playOnce);
-            };
-            document.addEventListener('click', playOnce, { once: true });
-            document.addEventListener('touchstart', playOnce, { once: true });
-          });
+          if (result && result.ctx && result.decoded) {
+            // AudioContext đã unlock + buffer đã decode → play ngay, không delay
+            const src = result.ctx.createBufferSource();
+            src.buffer = result.decoded;
+            src.connect(result.ctx.destination);
+            src.start(0);
+          } else {
+            // Fallback về Audio element
+            const au = new Audio('welcome.mp3');
+            au.volume = 1.0;
+            au.play().catch(() => {
+              const playOnce = () => { au.play(); };
+              document.addEventListener('click', playOnce, { once: true });
+              document.addEventListener('touchstart', playOnce, { once: true });
+            });
+          }
         });
       } catch(e) { console.warn('Không phát được âm thanh:', e); }
       // Hiện loading trong khi chờ Firebase
