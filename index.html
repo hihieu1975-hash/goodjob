@@ -1284,6 +1284,7 @@ memberName = window.memberName;
     var obs=new MutationObserver(function(muts){
       muts.forEach(function(m){
         if(m.attributeName==='style'&&mainApp.style.display!=='none'){
+          if(window._skipBoot){window._skipBoot=false;return;}
           runBoot();
         }
       });
@@ -2824,7 +2825,12 @@ function maybeShowWeeklyRank() {
         .then(decoded => ({ ctx, decoded }))
         .catch(() => null);
     } catch(e) { window._audioUnlockReady = null; }
-    try { await signInWithEmailAndPassword(auth, email, password); } 
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Ghi nhớ thông tin đăng nhập gần nhất để tự điền lần sau
+      localStorage.setItem('saved_email', email);
+      localStorage.setItem('saved_password', password);
+    } 
     catch(e) { errEl.textContent = e.message; }
   };
 
@@ -2860,6 +2866,14 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-login').className = 'login-tab ' + (isLogin ? 'active' : 'inactive');
     document.getElementById('tab-register').className = 'login-tab ' + (isLogin ? 'inactive' : 'active');
   };
+
+  // Tự điền thông tin đăng nhập đã lưu
+  (function() {
+    const savedEmail = localStorage.getItem('saved_email');
+    const savedPassword = localStorage.getItem('saved_password');
+    if (savedEmail) document.getElementById('login-email').value = savedEmail;
+    if (savedPassword) document.getElementById('login-password').value = savedPassword;
+  })();
 
   // Control
   window.control = async function(action) {
@@ -3069,50 +3083,85 @@ function maybeShowWeeklyRank() {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
-      // Phát âm thanh chào mừng khi mở màn hình chính
-      try {
-        function playWelcome() {
-          const ctx = window._getAudioCtx ? window._getAudioCtx() : null;
-          if (ctx && ctx.state === 'running') {
-            // AudioContext đã unlock (vừa đăng nhập) → dùng luôn
-            Promise.resolve(window._audioUnlockReady).then(result => {
-              window._audioUnlockReady = null;
-              if (result && result.ctx && result.decoded) {
-                const src = result.ctx.createBufferSource();
-                src.buffer = result.decoded;
-                src.connect(result.ctx.destination);
-                src.start(0);
-              } else {
-                // decode lại nếu chưa có buffer
-                fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
-                  const src = ctx.createBufferSource();
-                  src.buffer = decoded;
-                  src.connect(ctx.destination);
-                  src.start(0);
-                }).catch(()=>{});
-              }
-            });
-          } else {
-            // Vào thẳng (session còn) → chưa có gesture → chờ click/touch đầu tiên trên app
-            const playOnGesture = () => {
-              const ctx2 = window._getAudioCtx ? window._getAudioCtx() : null;
-              if (ctx2) ctx2.resume();
-              fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>{
-                const c = ctx2 || new (window.AudioContext||window.webkitAudioContext)();
-                return c.decodeAudioData(buf).then(decoded=>{
-                  const src = c.createBufferSource();
-                  src.buffer = decoded;
-                  src.connect(c.destination);
-                  src.start(0);
-                });
-              }).catch(()=>{});
-            };
-            document.addEventListener('click', playOnGesture, { once: true });
-            document.addEventListener('touchstart', playOnGesture, { once: true });
-          }
+
+      // ===== AUTO-LOGOUT & QUICK-RESUME =====
+      const TIMEOUT_MS = 10 * 60 * 1000; // 10 phút
+      const lastActive = parseInt(localStorage.getItem('last_active_ts') || '0', 10);
+      const isQuickResume = (Date.now() - lastActive) < TIMEOUT_MS;
+
+      (function setupInactivityLogout() {
+        let inactivityTimer = null;
+
+        function resetTimer() {
+          clearTimeout(inactivityTimer);
+          localStorage.setItem('last_active_ts', Date.now());
+          inactivityTimer = setTimeout(async () => {
+            localStorage.removeItem('last_active_ts');
+            const toast = document.getElementById('admin-toast');
+            if (toast) {
+              toast.className = 'show info';
+              toast.textContent = '⏱ Phiên đăng nhập đã hết hạn do không hoạt động.';
+              setTimeout(() => toast.className = '', 3000);
+            }
+            await new Promise(r => setTimeout(r, 1200));
+            if (window._auth) await window._auth.signOut();
+          }, TIMEOUT_MS);
         }
-        playWelcome();
-      } catch(e) { console.warn('Không phát được âm thanh:', e); }
+
+        const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+        events.forEach(evt => document.addEventListener(evt, resetTimer, { passive: true }));
+        resetTimer();
+      })();
+
+      // Nếu quay lại trong vòng 10 phút → skip boot sequence và nhạc
+      if (isQuickResume) {
+        // Ẩn boot overlay ngay lập tức không cần animation
+        const bootOverlay = document.getElementById('boot-overlay');
+        if (bootOverlay) { bootOverlay.style.display = 'none'; bootOverlay.style.opacity = '0'; }
+        window._skipBoot = true;
+      } else {
+        // Phát âm thanh chào mừng khi đăng nhập mới
+        try {
+          function playWelcome() {
+            const ctx = window._getAudioCtx ? window._getAudioCtx() : null;
+            if (ctx && ctx.state === 'running') {
+              Promise.resolve(window._audioUnlockReady).then(result => {
+                window._audioUnlockReady = null;
+                if (result && result.ctx && result.decoded) {
+                  const src = result.ctx.createBufferSource();
+                  src.buffer = result.decoded;
+                  src.connect(result.ctx.destination);
+                  src.start(0);
+                } else {
+                  fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
+                    const src = ctx.createBufferSource();
+                    src.buffer = decoded;
+                    src.connect(ctx.destination);
+                    src.start(0);
+                  }).catch(()=>{});
+                }
+              });
+            } else {
+              const playOnGesture = () => {
+                const ctx2 = window._getAudioCtx ? window._getAudioCtx() : null;
+                if (ctx2) ctx2.resume();
+                fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>{
+                  const c = ctx2 || new (window.AudioContext||window.webkitAudioContext)();
+                  return c.decodeAudioData(buf).then(decoded=>{
+                    const src = c.createBufferSource();
+                    src.buffer = decoded;
+                    src.connect(c.destination);
+                    src.start(0);
+                  });
+                }).catch(()=>{});
+              };
+              document.addEventListener('click', playOnGesture, { once: true });
+              document.addEventListener('touchstart', playOnGesture, { once: true });
+            }
+          }
+          playWelcome();
+        } catch(e) { console.warn('Không phát được âm thanh:', e); }
+      }
       // Hiện loading trong khi chờ Firebase
       const zone = document.getElementById('camera-zone');
       zone.innerHTML = `<div style="text-align:center; padding:16px; font-size:0.8rem; color:rgba(255,255,255,0.4);">Đang tải...</div>`;
