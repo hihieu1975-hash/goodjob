@@ -1064,47 +1064,144 @@ memberName = window.memberName;
 <!-- ===== MAIN APP ===== -->
 <div id="main-app" style="display:none;">
 <!-- BOOT SEQUENCE OVERLAY -->
-<div id="boot-overlay" style="position:fixed;inset:0;background:#0a1020;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;opacity:1;transition:opacity 0.9s ease;font-family:'Courier New',monospace;">
-  <div style="position:relative;border:1px solid #22c55e;padding:32px 44px;min-width:340px;max-width:92vw;">
-    <span style="position:absolute;top:-2px;left:-2px;width:14px;height:14px;border-top:2px solid #22c55e;border-left:2px solid #22c55e;"></span>
-    <span style="position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-top:2px solid #22c55e;border-right:2px solid #22c55e;"></span>
-    <span style="position:absolute;bottom:-2px;left:-2px;width:14px;height:14px;border-bottom:2px solid #22c55e;border-left:2px solid #22c55e;"></span>
-    <span style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-bottom:2px solid #22c55e;border-right:2px solid #22c55e;"></span>
-    <div style="font-size:10px;letter-spacing:4px;color:#22c55e66;margin-bottom:18px;text-transform:uppercase;">ECOCITY — SYSTEM BOOT v1.0</div>
-    <div class="boot-line" style="animation-delay:0.05s">[ SYS ] Initializing core modules...</div>
-    <div class="boot-line boot-ok" style="animation-delay:0.55s">[ OK&nbsp; ] Firebase Auth .......... ONLINE</div>
-    <div class="boot-line boot-ok" style="animation-delay:1.0s">[ OK&nbsp; ] MQTT Broker ............ ONLINE</div>
-    <div class="boot-line boot-warn" style="animation-delay:1.45s">[ CAM ] Camera module .......... LOCKED</div>
-    <div class="boot-line boot-ok" style="animation-delay:1.9s">[ OK&nbsp; ] Weather API ............ READY</div>
-    <div class="boot-line boot-ok" style="animation-delay:2.3s">[ OK&nbsp; ] YOLO Engine ............ STANDBY</div>
-    <div id="boot-power" style="margin-top:18px;opacity:0;transition:opacity 0.4s;">
-      <div style="font-size:10px;letter-spacing:2px;color:#22c55e66;margin-bottom:10px;">POWER SEQUENCE</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span style="font-size:10px;color:#22c55e88;width:44px;">ALPHA</span>
-        <div style="flex:1;height:5px;background:#22c55e18;border:1px solid #22c55e33;overflow:hidden;position:relative;">
-          <div id="bar-alpha" style="height:100%;width:0%;background:#22c55e;transition:width 1.4s ease;position:relative;"><span style="position:absolute;right:0;top:0;bottom:0;width:3px;background:#fff;opacity:0.7;"></span></div>
-        </div>
-        <span id="val-alpha" style="font-size:10px;color:#22c55e;width:32px;text-align:right;">0%</span>
+<div id="boot-overlay" style="position:fixed;inset:0;background:#0f1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;opacity:1;transition:opacity 0.9s ease;">
+  <!-- Ambient glow top -->
+  <div style="position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:500px;height:300px;background:radial-gradient(ellipse,rgba(34,197,94,0.08) 0%,transparent 70%);pointer-events:none;"></div>
+
+  <div id="boot-card" style="
+    position:relative;
+    background:rgba(15,20,40,0.90);
+    border:1px solid rgba(255,255,255,0.10);
+    border-radius:24px;
+    padding:36px 40px;
+    min-width:340px;max-width:92vw;width:420px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    font-family:'Be Vietnam Pro','Segoe UI',sans-serif;
+  ">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+      <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12L12 5L19 12"/><path d="M5 12v7a1 1 0 0 0 1 1h4v-4h4v4h4a1 1 0 0 0 1-1v-7"/></svg>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:10px;color:#22c55e88;width:44px;">BETA</span>
-        <div style="flex:1;height:5px;background:#22c55e18;border:1px solid #22c55e33;overflow:hidden;position:relative;">
-          <div id="bar-beta" style="height:100%;width:0%;background:#22c55e;transition:width 1.1s ease;position:relative;"><span style="position:absolute;right:0;top:0;bottom:0;width:3px;background:#fff;opacity:0.7;"></span></div>
-        </div>
-        <span id="val-beta" style="font-size:10px;color:#22c55e;width:32px;text-align:right;">0%</span>
+      <div>
+        <div style="font-size:1rem;font-weight:800;color:white;letter-spacing:0.02em;">Welcome Home</div>
+        <div style="font-size:0.65rem;color:rgba(255,255,255,0.35);letter-spacing:0.10em;text-transform:uppercase;margin-top:1px;">Đang khởi động hệ thống...</div>
       </div>
     </div>
-    <div id="boot-ready" style="margin-top:18px;font-size:11px;letter-spacing:3px;color:#22c55e;text-align:center;opacity:0;transition:opacity 0.5s;">SYSTEM READY <span style="animation:bootBlink 0.7s step-end infinite;">&#x25AE;</span></div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:20px;"></div>
+
+    <!-- Boot items -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+      <div class="boot-row" style="animation-delay:0.05s">
+        <div class="boot-icon boot-icon-muted"><i class="ti ti-settings" style="font-size:13px;"></i></div>
+        <div class="boot-label">Khởi tạo module</div>
+        <div class="boot-status boot-status-muted">LOADING</div>
+      </div>
+      <div class="boot-row" style="animation-delay:0.55s">
+        <div class="boot-icon boot-icon-ok"><i class="ti ti-shield-check" style="font-size:13px;"></i></div>
+        <div class="boot-label">Firebase Auth</div>
+        <div class="boot-status boot-status-ok">ONLINE</div>
+      </div>
+      <div class="boot-row" style="animation-delay:1.0s">
+        <div class="boot-icon boot-icon-ok"><i class="ti ti-wifi" style="font-size:13px;"></i></div>
+        <div class="boot-label">MQTT Broker</div>
+        <div class="boot-status boot-status-ok">ONLINE</div>
+      </div>
+      <div class="boot-row" style="animation-delay:1.45s">
+        <div class="boot-icon boot-icon-warn"><i class="ti ti-camera" style="font-size:13px;"></i></div>
+        <div class="boot-label">Camera module</div>
+        <div class="boot-status boot-status-warn">LOCKED</div>
+      </div>
+      <div class="boot-row" style="animation-delay:1.9s">
+        <div class="boot-icon boot-icon-ok"><i class="ti ti-cloud" style="font-size:13px;"></i></div>
+        <div class="boot-label">Weather API</div>
+        <div class="boot-status boot-status-ok">READY</div>
+      </div>
+      <div class="boot-row" style="animation-delay:2.3s">
+        <div class="boot-icon boot-icon-ok"><i class="ti ti-cpu" style="font-size:13px;"></i></div>
+        <div class="boot-label">YOLO Engine</div>
+        <div class="boot-status boot-status-standby">STANDBY</div>
+      </div>
+    </div>
+
+    <!-- Power bars -->
+    <div id="boot-power" style="opacity:0;transition:opacity 0.4s;">
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:16px;"></div>
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.30);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Power Sequence</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:0.7rem;font-weight:600;color:rgba(255,255,255,0.50);width:44px;">Alpha</span>
+          <div style="flex:1;height:6px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:99px;overflow:hidden;">
+            <div id="bar-alpha" style="height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#22c55e,#4ade80);border-radius:99px;transition:width 1.4s ease;"></div>
+          </div>
+          <span id="val-alpha" style="font-size:0.72rem;font-weight:700;color:#22c55e;width:32px;text-align:right;">0%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:0.7rem;font-weight:600;color:rgba(255,255,255,0.50);width:44px;">Beta</span>
+          <div style="flex:1;height:6px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:99px;overflow:hidden;">
+            <div id="bar-beta" style="height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#22c55e,#4ade80);border-radius:99px;transition:width 1.1s ease;"></div>
+          </div>
+          <span id="val-beta" style="font-size:0.72rem;font-weight:700;color:#22c55e;width:32px;text-align:right;">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- System ready -->
+    <div id="boot-ready" style="margin-top:20px;opacity:0;transition:opacity 0.5s;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:99px;background:rgba(34,197,94,0.10);border:1px solid rgba(34,197,94,0.25);">
+        <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:bootPulse 1.2s ease infinite;display:inline-block;"></span>
+        <span style="font-size:0.8rem;font-weight:700;color:#86efac;letter-spacing:0.06em;">HỆ THỐNG SẴN SÀNG</span>
+      </div>
+    </div>
   </div>
-  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;"><div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,#22c55e44,transparent);animation:bootScan 2.5s linear infinite;"></div></div>
+
+  <!-- Scan line -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:24px;">
+    <div style="position:absolute;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(34,197,94,0.25),transparent);animation:bootScan 3s linear infinite;"></div>
+  </div>
 </div>
 <style>
-.boot-line{font-size:12px;line-height:1.9;color:#22c55e55;overflow:hidden;white-space:nowrap;max-width:100%;width:0;animation:bootType 0.5s steps(38,end) forwards;}
-.boot-ok{color:#22c55e;}
-.boot-warn{color:#f59e0b;}
-@keyframes bootType{to{width:100%;}}
-@keyframes bootBlink{50%{opacity:0;}}
-@keyframes bootScan{0%{top:-2px;}100%{top:100%;}}
+.boot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  opacity: 0;
+  animation: bootFadeIn 0.4s ease forwards;
+}
+.boot-icon {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.boot-icon-ok   { background: rgba(34,197,94,0.12); color: #22c55e; }
+.boot-icon-warn { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.boot-icon-muted{ background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.35); }
+.boot-label {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+.boot-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.boot-status-ok      { color: #22c55e; background: rgba(34,197,94,0.10); }
+.boot-status-warn    { color: #f59e0b; background: rgba(245,158,11,0.10); }
+.boot-status-standby { color: #818cf8; background: rgba(129,140,248,0.10); }
+.boot-status-muted   { color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05); }
+@keyframes bootFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes bootBlink  { 50%{opacity:0} }
+@keyframes bootScan   { 0%{top:-2px} 100%{top:100%} }
+@keyframes bootPulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
 </style>
 <script>
 (function(){
