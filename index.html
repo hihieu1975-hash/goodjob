@@ -2988,7 +2988,7 @@ function maybeShowWeeklyRank() {
 <div id="pusheen-sticker-wrap">
   <div id="pusheen-comic-bubble">
     <div id="pusheen-comic-tail"></div>
-    <span>Bạn biết không, bạn có thể xoay ngang màn hình để trải nghiệm thành phố Hồ Chí Minh về ban đêm đấy!</span>
+    <span id="pusheen-comic-text"></span>
   </div>
   <img id="pusheen-sprite" src="" alt="pusheen" />
 </div>
@@ -3105,7 +3105,41 @@ function maybeShowWeeklyRank() {
   sprite.src = frames[0];
 
   const hintBtn = document.getElementById('pusheen-hint-btn');
+  const comicText = document.getElementById('pusheen-comic-text');
   let autoHideTimer = null;
+
+  // Danh sách câu thoại với trọng số (weight)
+  // weight cao = xuất hiện nhiều hơn
+  const messages = [
+    {
+      weight: 35,
+      html: 'Bạn biết không, bạn có thể xoay ngang màn hình để trải nghiệm <span style="color:#ef4444;font-weight:700;">thành phố Hồ Chí Minh</span> về ban đêm đấy!'
+    },
+    {
+      weight: 35,
+      html: 'Bạn biết không, thuật toán học sâu YOLO khi mở gói Pro-Premium đôi khi sẽ bắt và khoanh vùng được <span style="color:#ef4444;font-weight:700;">ma, linh hồn,...</span> đấy thì cũng được quá bất ngờ nhé 👻'
+    },
+    {
+      weight: 30,
+      html: 'Bạn biết không, linh kiện sử dụng cho dự án này trên <span style="color:#ef4444;font-weight:700;">2.000.000 đồng</span> chưa tính Camera đã có sẵn á'
+    },
+    {
+      weight: 8,
+      html: 'Bạn biết không, ấn vào nút <b>vinh danh</b> trên bảng xếp hạng có thể thấy được mức rank hiện tại của top 1, 2, 3 đấy 🏆'
+    }
+  ];
+
+  // Tính tổng weight
+  const totalWeight = messages.reduce((sum, m) => sum + m.weight, 0);
+
+  function getRandomMessage() {
+    let rand = Math.random() * totalWeight;
+    for (const m of messages) {
+      rand -= m.weight;
+      if (rand <= 0) return m.html;
+    }
+    return messages[0].html;
+  }
 
   // Sprite animation loop
   setInterval(() => {
@@ -3114,6 +3148,9 @@ function maybeShowWeeklyRank() {
   }, 120);
 
   function showSticker() {
+    // Chọn câu thoại random có trọng số
+    comicText.innerHTML = getRandomMessage();
+
     wrap.classList.remove('hide');
     wrap.classList.add('visible');
     hintBtn.classList.add('hidden');
