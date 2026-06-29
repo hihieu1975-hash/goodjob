@@ -2795,6 +2795,12 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
+    // Unlock audio ngay trong gesture click này
+    try {
+      window._unlockedAudio = new Audio('welcome.mp3');
+      window._unlockedAudio.volume = 1.0;
+      window._unlockedAudio.load();
+    } catch(e) {}
     try { await signInWithEmailAndPassword(auth, email, password); } 
     catch(e) { errEl.textContent = e.message; }
   };
@@ -3042,10 +3048,12 @@ function maybeShowWeeklyRank() {
       setupRealtime();
       // Phát âm thanh chào mừng khi mở màn hình chính
       try {
-        const welcomeAudio = new Audio('welcome.mp3');
+        // Dùng audio đã unlock từ gesture đăng nhập nếu có, không thì tạo mới
+        const welcomeAudio = window._unlockedAudio || new Audio('welcome.mp3');
+        window._unlockedAudio = null;
         welcomeAudio.volume = 1.0;
         welcomeAudio.play().catch(() => {
-          // Trình duyệt chặn autoplay → chờ thao tác đầu tiên của user rồi phát
+          // Fallback: chờ click tiếp theo
           const playOnce = () => {
             welcomeAudio.play();
             document.removeEventListener('click', playOnce);
