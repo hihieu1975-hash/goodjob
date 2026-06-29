@@ -2982,15 +2982,43 @@ function maybeShowWeeklyRank() {
   </div>
 </div>
 <!-- Pusheen Sticker + Comic Chat -->
+<!-- Nút ? -->
+<div id="pusheen-hint-btn" title="Gợi ý">?</div>
+
 <div id="pusheen-sticker-wrap">
   <div id="pusheen-comic-bubble">
     <div id="pusheen-comic-tail"></div>
-    <span>📱 Bạn biết không, bạn có thể xoay ngang màn hình để trải nghiệm thành phố Hồ Chí Minh về ban đêm đấy!</span>
+    <span>Bạn biết không, bạn có thể xoay ngang màn hình để trải nghiệm thành phố Hồ Chí Minh về ban đêm đấy!</span>
   </div>
   <img id="pusheen-sprite" src="" alt="pusheen" />
 </div>
 
 <style>
+#pusheen-hint-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  border: 3px solid #2d1a0e;
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #2d1a0e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  box-shadow: 2px 2px 0 #2d1a0e;
+  transition: transform 0.2s;
+  user-select: none;
+}
+#pusheen-hint-btn:hover { transform: scale(1.1); }
+#pusheen-hint-btn.hidden { display: none; }
+
 #pusheen-sticker-wrap {
   position: fixed;
   bottom: 0;
@@ -2999,14 +3027,14 @@ function maybeShowWeeklyRank() {
   flex-direction: column;
   align-items: flex-end;
   z-index: 9999;
-  transform: translateY(100%);
+  transform: translateY(200%);
   transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
 }
 #pusheen-sticker-wrap.visible {
   transform: translateY(0);
 }
 #pusheen-sticker-wrap.hide {
-  transform: translateY(110%);
+  transform: translateY(200%);
   transition: transform 0.5s ease-in;
 }
 #pusheen-sprite {
