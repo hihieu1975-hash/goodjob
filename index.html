@@ -3104,19 +3104,42 @@ function maybeShowWeeklyRank() {
   const wrap = document.getElementById('pusheen-sticker-wrap');
   sprite.src = frames[0];
 
+  const hintBtn = document.getElementById('pusheen-hint-btn');
+  let autoHideTimer = null;
+
   // Sprite animation loop
   setInterval(() => {
     fi = (fi + 1) % frames.length;
     sprite.src = frames[fi];
   }, 120);
 
+  function showSticker() {
+    wrap.classList.remove('hide');
+    wrap.classList.add('visible');
+    hintBtn.classList.add('hidden');
+
+    // Auto hide after 6s
+    clearTimeout(autoHideTimer);
+    autoHideTimer = setTimeout(() => {
+      hideSticker();
+    }, 6000);
+  }
+
+  function hideSticker() {
+    wrap.classList.remove('visible');
+    wrap.classList.add('hide');
+    // Show hint button after transition ends (~0.5s)
+    setTimeout(() => {
+      hintBtn.classList.remove('hidden');
+    }, 600);
+  }
+
+  // Click ? button to show sticker
+  hintBtn.addEventListener('click', showSticker);
+
   // Slide up after page load
   setTimeout(() => {
-    wrap.classList.add('visible');
-    // Auto hide after 6s
-    setTimeout(() => {
-      wrap.classList.add('hide');
-    }, 6000);
+    showSticker();
   }, 1200);
 })();
 </script>
