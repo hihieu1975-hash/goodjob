@@ -2799,6 +2799,22 @@ function maybeShowWeeklyRank() {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     if (!email || !password) { window._justSignedIn = false; return errEl.textContent = 'Vui lòng nhập đầy đủ.'; }
+
+    // Hiện boot overlay NGAY KHI bấm đăng nhập — không chờ Firebase
+    // Nếu đăng nhập thất bại sẽ ẩn lại
+    const bootOverlay = document.getElementById('boot-overlay');
+    const loginScreen = document.getElementById('login-screen');
+    if (bootOverlay) {
+      bootOverlay.style.display = 'flex';
+      bootOverlay.style.opacity = '1';
+      window._bootStartedEarly = true;
+      if (typeof window._runBootSequence === 'function') window._runBootSequence();
+    }
+    if (loginScreen) {
+      loginScreen.style.display = 'none';
+      loginScreen.style.visibility = 'hidden';
+      loginScreen.style.zIndex = '-1';
+    }
     // Dùng AudioContext toàn cục đã được unlock, fetch + decode buffer song song với auth
     try {
       const ctx = window._getAudioCtx();
@@ -2815,7 +2831,17 @@ function maybeShowWeeklyRank() {
       localStorage.setItem('saved_email', email);
       localStorage.setItem('saved_password', password);
     } 
-    catch(e) { errEl.textContent = e.message; }
+    catch(e) {
+      // Đăng nhập thất bại → khôi phục lại login screen
+      window._justSignedIn = false;
+      if (bootOverlay) { bootOverlay.style.display = 'none'; bootOverlay.style.opacity = '0'; }
+      if (loginScreen) {
+        loginScreen.style.display = 'flex';
+        loginScreen.style.visibility = 'visible';
+        loginScreen.style.zIndex = '9999';
+      }
+      errEl.textContent = e.message;
+    }
   };
 
   window.doRegister = async function() {
@@ -3073,7 +3099,10 @@ function maybeShowWeeklyRank() {
       // vì MutationObserver fire ngay lập tức khi style.display thay đổi
       const justSignedIn = window._justSignedIn === true;
       window._justSignedIn = false;
-      window._skipBoot = (isQuickResume && !justSignedIn);
+      // Nếu boot đã chạy từ doLogin (early boot) → skip, không chạy lại
+      const bootAlreadyRunning = window._bootStartedEarly === true;
+      window._bootStartedEarly = false;
+      window._skipBoot = (isQuickResume && !justSignedIn) || bootAlreadyRunning;
 
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
