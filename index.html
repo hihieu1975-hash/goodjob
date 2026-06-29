@@ -942,49 +942,55 @@ memberName = window.memberName;
     max-width: 380px;
     width: 92%;
     margin-bottom: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(15,20,40,0.88);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    border: none;
-    border-radius: 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.50);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
   }
 
   @media (max-width: 768px) {
     .login-card {
       width: 92%;
       max-width: 380px;
-      border-radius: 28px;
-      padding: 32px 24px 32px;
+      border-radius: 24px;
+      padding: 32px 24px 28px;
     }
   }
 
   .login-input {
     width: 100%; padding: 13px 16px; margin-bottom: 10px;
-    background: rgba(255,255,255,0.18);
-    border: none;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
     border-radius: 12px; color: white; font-size: 0.9rem;
     outline: none; display: block;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
   }
-  .login-input:focus { border-color: transparent; }
-  .login-input::placeholder { color: rgba(255,255,255,0.85); }
+  .login-input:focus {
+    border-color: rgba(34,197,94,0.55);
+    background: rgba(255,255,255,0.11);
+  }
+  .login-input::placeholder { color: rgba(255,255,255,0.45); }
 
   .login-tab-bar {
-    display: flex; background: rgba(255,255,255,0.18);
+    display: flex; background: rgba(255,255,255,0.07);
     border-radius: 12px; padding: 4px; margin-bottom: 22px;
-    border: none;
+    border: 1px solid rgba(255,255,255,0.10);
   }
   .login-tab {
     flex: 1; padding: 10px; border: none; border-radius: 9px;
     font-weight: 700; font-size: 0.85rem; cursor: pointer;
     transition: all 0.2s;
+    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
   }
   .login-tab.active {
-    background: rgba(255,255,255,0.40); color: white;
+    background: rgba(255,255,255,0.15); color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
   .login-tab.inactive {
-    background: transparent; color: rgba(255,255,255,0.85);
+    background: transparent; color: rgba(255,255,255,0.55);
   }
 
   .login-btn {
@@ -1019,7 +1025,7 @@ memberName = window.memberName;
   }
   .login-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
     margin: 20px 0;
   }
 </style>
@@ -1027,8 +1033,11 @@ memberName = window.memberName;
 <div id="login-screen">
   <div class="login-card">
 
-    <div style="font-size:1.6rem; font-weight:800; color:white; letter-spacing:0.02em; margin-bottom:4px;">Welcome Home</div>
-    <div style="font-size:0.75rem; color:rgba(255,255,255,0.75); letter-spacing:0.08em; margin-bottom:24px;">VÌ MỘT VIỆT NAM THỊNH VƯỢNG</div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M5 12L12 5L19 12"/><path d="M5 12v7a1 1 0 0 0 1 1h4v-4h4v4h4a1 1 0 0 0 1-1v-7"/></svg>
+      <div style="font-size:1.7rem; font-weight:800; color:white; letter-spacing:0.02em;">Welcome Home</div>
+    </div>
+    <div style="font-size:0.7rem; color:rgba(255,255,255,0.40); letter-spacing:0.10em; text-transform:uppercase; margin-bottom:24px;">Vì một Việt Nam Thịnh Vượng</div>
 
     <div class="login-divider"></div>
 
@@ -1054,7 +1063,7 @@ memberName = window.memberName;
       <button class="login-btn login-btn-secondary" onclick="doRegister()">Tạo tài khoản</button>
     </div>
 
-    <div style="font-size:0.68rem; color:rgba(255,255,255,0.50); margin-top:18px; line-height:1.6;">
+    <div style="font-size:0.68rem; color:rgba(255,255,255,0.30); margin-top:18px; line-height:1.6;">
       Bằng cách đăng nhập, bạn đồng ý với điều khoản sử dụng<br>hệ thống điều khiển nhà thông minh này.
     </div>
 
