@@ -1230,10 +1230,13 @@ memberName = window.memberName;
 <script>
 (function(){
   var bootRunning=false;
+  var fadeOutTimer=null;
+  var bootStartTime=0;
   function runBoot(){
     var overlay=document.getElementById('boot-overlay');
     if(!overlay||bootRunning)return;
     bootRunning=true;
+    bootStartTime=Date.now();
 
     // Reset visual state
     overlay.style.display='flex';
@@ -1273,15 +1276,33 @@ memberName = window.memberName;
     },2700);
     // "SYSTEM READY" at 4.1s
     setTimeout(function(){readyEl.style.opacity='1';},4100);
-    // Fade out at 5.0s, then unlock for next login
-    setTimeout(function(){
+    // Fade out at 5.0s (mặc định), có thể bị kéo dài bởi scheduleFadeOut
+    scheduleFadeOut(5000);
+    // Nếu đã có duration voice biết trước khi boot bắt đầu, áp dụng luôn
+    if(window._pendingVoiceExtend){
+      window._extendBootUntil(window._pendingVoiceExtend);
+      window._pendingVoiceExtend = null;
+    }
+  }
+  function scheduleFadeOut(delayMs){
+    var overlay=document.getElementById('boot-overlay');
+    if(fadeOutTimer) clearTimeout(fadeOutTimer);
+    fadeOutTimer=setTimeout(function(){
       overlay.style.opacity='0';
       setTimeout(function(){
         overlay.style.display='none';
         bootRunning=false;
       },950);
-    },5000);
+    },delayMs);
   }
+  // Cho phép kéo dài thời gian overlay nếu voice còn đang phát dở
+  // targetTotalMs: tổng thời gian (kể từ lúc bắt đầu boot) mà overlay cần tồn tại tối thiểu
+  window._extendBootUntil = function(targetTotalMs){
+    if(!bootRunning){ window._pendingVoiceExtend = targetTotalMs; return; }
+    var elapsed = Date.now() - bootStartTime;
+    var remaining = targetTotalMs - elapsed;
+    scheduleFadeOut(Math.max(remaining, 200));
+  };
   window._runBootSequence=runBoot;
   // Auto-run: observe main-app visibility
   var mainApp=document.getElementById('main-app');
@@ -3115,6 +3136,7 @@ function maybeShowWeeklyRank() {
                 src.buffer = result.decoded;
                 src.connect(result.ctx.destination);
                 src.start(0);
+                if (window._extendBootUntil) window._extendBootUntil(result.decoded.duration * 1000 + 600);
               } else {
                 // decode lại nếu chưa có buffer
                 fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
@@ -3122,6 +3144,7 @@ function maybeShowWeeklyRank() {
                   src.buffer = decoded;
                   src.connect(ctx.destination);
                   src.start(0);
+                  if (window._extendBootUntil) window._extendBootUntil(decoded.duration * 1000 + 600);
                 }).catch(()=>{});
               }
             });
