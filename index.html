@@ -1010,8 +1010,13 @@ memberName = window.memberName;
     width: 100%; padding: 14px; border: none; border-radius: 12px;
     color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
-  .login-btn:hover { transform: translateY(-2px); }
+  @media (hover: hover) {
+    .login-btn:hover { transform: translateY(-2px); }
+  }
+  .login-btn:active { transform: translateY(0) scale(0.98); }
   .login-btn-primary {
     background: linear-gradient(135deg, #fde68a, #f59e0b, #fde68a);
     background-size: 200% 200%;
