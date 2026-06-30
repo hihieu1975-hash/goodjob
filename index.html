@@ -1261,7 +1261,7 @@ memberName = window.memberName;
       row.parentNode.replaceChild(clone,row);
     });
 
-    // Power bars at 2.7s
+    // Power bars at 4.2s (đã lùi thêm 1.5s)
     setTimeout(function(){
       powerEl.style.opacity='1';
       setTimeout(function(){
@@ -1273,11 +1273,11 @@ memberName = window.memberName;
           if(a>=100&&b>=100)clearInterval(t);
         },28);
       },80);
-    },2700);
-    // "SYSTEM READY" at 4.1s
-    setTimeout(function(){readyEl.style.opacity='1';},4100);
-    // Fade out at 5.0s (mặc định), có thể bị kéo dài bởi scheduleFadeOut
-    scheduleFadeOut(5000);
+    },4200);
+    // "SYSTEM READY" at 5.6s (đã lùi thêm 1.5s)
+    setTimeout(function(){readyEl.style.opacity='1';},5600);
+    // Fade out at 6.5s mặc định (đã lùi thêm 1.5s), có thể bị kéo dài bởi scheduleFadeOut
+    scheduleFadeOut(6500);
     // Nếu đã có duration voice biết trước khi boot bắt đầu, áp dụng luôn
     if(window._pendingVoiceExtend){
       window._extendBootUntil(window._pendingVoiceExtend);
