@@ -1268,9 +1268,14 @@ memberName = window.memberName;
         barA.style.width='100%'; barB.style.width='100%';
         var a=0,b=0;
         var t=setInterval(function(){
-          a=Math.min(a+3,100); b=Math.min(b+4,100);
-          valA.textContent=a+'%'; valB.textContent=b+'%';
-          if(a>=100&&b>=100)clearInterval(t);
+          a=Math.min(a+3,100);
+          valA.textContent=a+'%';
+          if(a>=100)clearInterval(t);
+        },28);
+        var tb=setInterval(function(){
+          b=Math.min(b+2.5,100);
+          valB.textContent=Math.round(b)+'%';
+          if(b>=100)clearInterval(tb);
         },28);
       },80);
     },4200);
