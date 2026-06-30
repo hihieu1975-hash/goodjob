@@ -881,15 +881,32 @@ header p { margin-top: 6px; font-size: 1.1rem; opacity: 0.85; }
 <body>
 <script>
 window._onAuthChange = function(user) {
-  // Hàm này chỉ xử lý login-screen visibility
-  // Việc show main-app và trigger boot do onAuthStateChanged đảm nhiệm
-  const ls = document.getElementById('login-screen');
   if (user) {
-    // Ẩn login-screen ngay (không flash)
+    const ls = document.getElementById('login-screen');
     ls.style.display = 'none';
     ls.style.visibility = 'hidden';
     ls.style.zIndex = '-1';
+    document.getElementById('main-app').style.display = 'block';
+    window.memberName = user.name || user.email;
+memberName = window.memberName;
+    localStorage.setItem('member_name', memberName);
+    document.getElementById('display-name').textContent = memberName;
+    if (user.photo) {
+      const av = document.getElementById('user-avatar');
+      av.src = user.photo;
+      av.style.display = 'block';
+    }
+    if (window._fbReady) {
+      const { db, ref, get: _get, update: _update } = window._fb;
+      // Chỉ ghi name nếu chưa có trong DB (tránh ghi đè tên do admin đã đổi)
+      _get(ref(db, 'users/' + user.uid + '/name')).then(snap => {
+        const updateData = { email: user.email, photo: user.photo || '', lastSeen: Date.now() };
+        if (!snap.exists() || !snap.val()) updateData.name = user.name;
+        _update(ref(db, 'users/' + user.uid), updateData);
+      });
+    }
   } else {
+    const ls = document.getElementById('login-screen');
     ls.style.display = 'flex';
     ls.style.visibility = 'visible';
     ls.style.zIndex = '9999';
@@ -1267,7 +1284,6 @@ window._onAuthChange = function(user) {
     var obs=new MutationObserver(function(muts){
       muts.forEach(function(m){
         if(m.attributeName==='style'&&mainApp.style.display!=='none'){
-          if(window._skipBoot){window._skipBoot=false;return;}
           runBoot();
         }
       });
@@ -1286,7 +1302,7 @@ window._onAuthChange = function(user) {
     <div style="margin-top:12px; display:flex; align-items:center; justify-content:center; gap:10px;">
       <img id="user-avatar" src="" style="width:32px; height:32px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); display:none;">
       <span style="font-size:0.9rem; opacity:0.85;">Xin chào, <b id="display-name"></b>!</span>
-      <button onclick="window._justSignedIn=false; localStorage.removeItem('last_active_ts'); window._auth && window._auth.signOut();" style="padding:4px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:8px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); font-size:0.75rem; cursor:pointer;">Đăng xuất</button>
+      <button onclick="window._auth && window._auth.signOut()" style="padding:4px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:8px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.7); font-size:0.75rem; cursor:pointer;">Đăng xuất</button>
     </div>
   </header>
 
@@ -2793,28 +2809,11 @@ function maybeShowWeeklyRank() {
 
   // Auth
   window.doLogin = async function() {
-    window._justSignedIn = true; // luôn chạy boot khi đăng nhập
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
-    if (!email || !password) { window._justSignedIn = false; return errEl.textContent = 'Vui lòng nhập đầy đủ.'; }
-
-    // Hiện boot overlay NGAY KHI bấm đăng nhập — không chờ Firebase
-    // Nếu đăng nhập thất bại sẽ ẩn lại
-    const bootOverlay = document.getElementById('boot-overlay');
-    const loginScreen = document.getElementById('login-screen');
-    if (bootOverlay) {
-      bootOverlay.style.display = 'flex';
-      bootOverlay.style.opacity = '1';
-      window._bootStartedEarly = true;
-      if (typeof window._runBootSequence === 'function') window._runBootSequence();
-    }
-    if (loginScreen) {
-      loginScreen.style.display = 'none';
-      loginScreen.style.visibility = 'hidden';
-      loginScreen.style.zIndex = '-1';
-    }
+    if (!email || !password) return errEl.textContent = 'Vui lòng nhập đầy đủ.';
     // Dùng AudioContext toàn cục đã được unlock, fetch + decode buffer song song với auth
     try {
       const ctx = window._getAudioCtx();
@@ -2825,23 +2824,8 @@ function maybeShowWeeklyRank() {
         .then(decoded => ({ ctx, decoded }))
         .catch(() => null);
     } catch(e) { window._audioUnlockReady = null; }
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Ghi nhớ thông tin đăng nhập gần nhất để tự điền lần sau
-      localStorage.setItem('saved_email', email);
-      localStorage.setItem('saved_password', password);
-    } 
-    catch(e) {
-      // Đăng nhập thất bại → khôi phục lại login screen
-      window._justSignedIn = false;
-      if (bootOverlay) { bootOverlay.style.display = 'none'; bootOverlay.style.opacity = '0'; }
-      if (loginScreen) {
-        loginScreen.style.display = 'flex';
-        loginScreen.style.visibility = 'visible';
-        loginScreen.style.zIndex = '9999';
-      }
-      errEl.textContent = e.message;
-    }
+    try { await signInWithEmailAndPassword(auth, email, password); } 
+    catch(e) { errEl.textContent = e.message; }
   };
 
   window.doRegister = async function() {
@@ -2876,14 +2860,6 @@ function maybeShowWeeklyRank() {
     document.getElementById('tab-login').className = 'login-tab ' + (isLogin ? 'active' : 'inactive');
     document.getElementById('tab-register').className = 'login-tab ' + (isLogin ? 'inactive' : 'active');
   };
-
-  // Tự điền thông tin đăng nhập đã lưu
-  (function() {
-    const savedEmail = localStorage.getItem('saved_email');
-    const savedPassword = localStorage.getItem('saved_password');
-    if (savedEmail) document.getElementById('login-email').value = savedEmail;
-    if (savedPassword) document.getElementById('login-password').value = savedPassword;
-  })();
 
   // Control
   window.control = async function(action) {
@@ -3090,96 +3066,53 @@ function maybeShowWeeklyRank() {
       } else {
         dnEl.textContent = currentUser.name;
       }
-      // ===== AUTO-LOGOUT & QUICK-RESUME =====
-      const TIMEOUT_MS = 10 * 60 * 1000; // 10 phút
-      const lastActive = parseInt(localStorage.getItem('last_active_ts') || '0', 10);
-      const isQuickResume = (Date.now() - lastActive) < TIMEOUT_MS;
-
-      // QUAN TRỌNG: phải set _skipBoot TRƯỚC khi show main-app
-      // vì MutationObserver fire ngay lập tức khi style.display thay đổi
-      const justSignedIn = window._justSignedIn === true;
-      window._justSignedIn = false;
-      // Nếu boot đã chạy từ doLogin (early boot) → skip, không chạy lại
-      const bootAlreadyRunning = window._bootStartedEarly === true;
-      window._bootStartedEarly = false;
-      window._skipBoot = (isQuickResume && !justSignedIn) || bootAlreadyRunning;
-
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
       setupRealtime();
-
-      (function setupInactivityLogout() {
-        let inactivityTimer = null;
-
-        function resetTimer() {
-          clearTimeout(inactivityTimer);
-          localStorage.setItem('last_active_ts', Date.now());
-          inactivityTimer = setTimeout(async () => {
-            localStorage.removeItem('last_active_ts');
-            const toast = document.getElementById('admin-toast');
-            if (toast) {
-              toast.className = 'show info';
-              toast.textContent = '⏱ Phiên đăng nhập đã hết hạn do không hoạt động.';
-              setTimeout(() => toast.className = '', 3000);
-            }
-            await new Promise(r => setTimeout(r, 1200));
-            if (window._auth) await window._auth.signOut();
-          }, TIMEOUT_MS);
-        }
-
-        const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
-        events.forEach(evt => document.addEventListener(evt, resetTimer, { passive: true }));
-        resetTimer();
-      })();
-
-      if (isQuickResume && !justSignedIn) {
-        // Đóng tab/trình duyệt rồi vào lại trong 10 phút → skip boot và nhạc
-        const bootOverlay = document.getElementById('boot-overlay');
-        if (bootOverlay) { bootOverlay.style.display = 'none'; bootOverlay.style.opacity = '0'; }
-      } else {
-        // Đăng nhập mới hoặc đăng xuất rồi đăng nhập lại → luôn chạy boot
-        // Phát âm thanh chào mừng khi đăng nhập mới
-        try {
-          function playWelcome() {
-            const ctx = window._getAudioCtx ? window._getAudioCtx() : null;
-            if (ctx && ctx.state === 'running') {
-              Promise.resolve(window._audioUnlockReady).then(result => {
-                window._audioUnlockReady = null;
-                if (result && result.ctx && result.decoded) {
-                  const src = result.ctx.createBufferSource();
-                  src.buffer = result.decoded;
-                  src.connect(result.ctx.destination);
+      // Phát âm thanh chào mừng khi mở màn hình chính
+      try {
+        function playWelcome() {
+          const ctx = window._getAudioCtx ? window._getAudioCtx() : null;
+          if (ctx && ctx.state === 'running') {
+            // AudioContext đã unlock (vừa đăng nhập) → dùng luôn
+            Promise.resolve(window._audioUnlockReady).then(result => {
+              window._audioUnlockReady = null;
+              if (result && result.ctx && result.decoded) {
+                const src = result.ctx.createBufferSource();
+                src.buffer = result.decoded;
+                src.connect(result.ctx.destination);
+                src.start(0);
+              } else {
+                // decode lại nếu chưa có buffer
+                fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
+                  const src = ctx.createBufferSource();
+                  src.buffer = decoded;
+                  src.connect(ctx.destination);
                   src.start(0);
-                } else {
-                  fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{
-                    const src = ctx.createBufferSource();
-                    src.buffer = decoded;
-                    src.connect(ctx.destination);
-                    src.start(0);
-                  }).catch(()=>{});
-                }
-              });
-            } else {
-              const playOnGesture = () => {
-                const ctx2 = window._getAudioCtx ? window._getAudioCtx() : null;
-                if (ctx2) ctx2.resume();
-                fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>{
-                  const c = ctx2 || new (window.AudioContext||window.webkitAudioContext)();
-                  return c.decodeAudioData(buf).then(decoded=>{
-                    const src = c.createBufferSource();
-                    src.buffer = decoded;
-                    src.connect(c.destination);
-                    src.start(0);
-                  });
                 }).catch(()=>{});
-              };
-              document.addEventListener('click', playOnGesture, { once: true });
-              document.addEventListener('touchstart', playOnGesture, { once: true });
-            }
+              }
+            });
+          } else {
+            // Vào thẳng (session còn) → chưa có gesture → chờ click/touch đầu tiên trên app
+            const playOnGesture = () => {
+              const ctx2 = window._getAudioCtx ? window._getAudioCtx() : null;
+              if (ctx2) ctx2.resume();
+              fetch('welcome.mp3').then(r=>r.arrayBuffer()).then(buf=>{
+                const c = ctx2 || new (window.AudioContext||window.webkitAudioContext)();
+                return c.decodeAudioData(buf).then(decoded=>{
+                  const src = c.createBufferSource();
+                  src.buffer = decoded;
+                  src.connect(c.destination);
+                  src.start(0);
+                });
+              }).catch(()=>{});
+            };
+            document.addEventListener('click', playOnGesture, { once: true });
+            document.addEventListener('touchstart', playOnGesture, { once: true });
           }
-          playWelcome();
-        } catch(e) { console.warn('Không phát được âm thanh:', e); }
-      }
+        }
+        playWelcome();
+      } catch(e) { console.warn('Không phát được âm thanh:', e); }
       // Hiện loading trong khi chờ Firebase
       const zone = document.getElementById('camera-zone');
       zone.innerHTML = `<div style="text-align:center; padding:16px; font-size:0.8rem; color:rgba(255,255,255,0.4);">Đang tải...</div>`;
