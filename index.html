@@ -2827,6 +2827,7 @@ function maybeShowWeeklyRank() {
         .catch(() => null);
     } catch(e) { window._audioUnlockReady = null; }
     try {
+      window._explicitLogin = true; // đánh dấu đây là lần đăng nhập do người dùng chủ động bấm nút
       await signInWithEmailAndPassword(auth, email, password);
       // Lưu lại tài khoản/mật khẩu vừa đăng nhập thành công để lần sau mở app tự điền sẵn
       try {
@@ -2834,7 +2835,7 @@ function maybeShowWeeklyRank() {
         localStorage.setItem('saved_login_password', password);
       } catch(e2) {}
     }
-    catch(e) { errEl.textContent = e.message; }
+    catch(e) { window._explicitLogin = false; errEl.textContent = e.message; }
   };
 
   // Tự điền email/mật khẩu của lần đăng nhập gần nhất (nếu có) để chỉ cần bấm "Đăng nhập"
@@ -3048,6 +3049,12 @@ function maybeShowWeeklyRank() {
   // Auth state
   onAuthStateChanged(auth, async user => {
     if (window._registeringInProgress) return; // bỏ qua khi đang đăng ký
+    // Nếu Firebase tự khôi phục session cũ (mở lại link) mà KHÔNG phải do người dùng
+    // vừa bấm nút "Đăng nhập" -> ép đăng xuất, bắt buộc phải bấm nút mới vào được.
+    if (user && !window._explicitLogin) {
+      try { await signOut(auth); } catch(e) {}
+      return;
+    }
     if (user) {
       // Ưu tiên tên từ Database (admin có thể đã đổi tên)
       const dbNameSnap = await get(ref(db, 'users/' + user.uid + '/name'));
