@@ -2178,10 +2178,12 @@ function renderModalPackages() {
 function openModal() {
   renderModalPackages();
   document.getElementById('modal').classList.add('show');
+  if (typeof window._pauseSticker === 'function') window._pauseSticker();
 }
 
 function closeModal() {
   document.getElementById('modal').classList.remove('show');
+  if (typeof window._resumeSticker === 'function') window._resumeSticker();
 }
 
 const tierConfig = {
@@ -2824,9 +2826,27 @@ function maybeShowWeeklyRank() {
         .then(decoded => ({ ctx, decoded }))
         .catch(() => null);
     } catch(e) { window._audioUnlockReady = null; }
-    try { await signInWithEmailAndPassword(auth, email, password); } 
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Lưu lại tài khoản/mật khẩu vừa đăng nhập thành công để lần sau mở app tự điền sẵn
+      try {
+        localStorage.setItem('saved_login_email', email);
+        localStorage.setItem('saved_login_password', password);
+      } catch(e2) {}
+    }
     catch(e) { errEl.textContent = e.message; }
   };
+
+  // Tự điền email/mật khẩu của lần đăng nhập gần nhất (nếu có) để chỉ cần bấm "Đăng nhập"
+  window._prefillSavedLogin = function() {
+    try {
+      const savedEmail = localStorage.getItem('saved_login_email');
+      const savedPassword = localStorage.getItem('saved_login_password');
+      if (savedEmail) document.getElementById('login-email').value = savedEmail;
+      if (savedPassword) document.getElementById('login-password').value = savedPassword;
+    } catch(e) {}
+  };
+  window._prefillSavedLogin();
 
   window.doRegister = async function() {
     const name = document.getElementById('reg-name').value.trim();
@@ -3068,6 +3088,7 @@ function maybeShowWeeklyRank() {
       }
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
+      if (typeof window._startPusheen === 'function') window._startPusheen();
       setupRealtime();
       // Phát âm thanh chào mừng khi mở màn hình chính
       try {
@@ -3150,6 +3171,8 @@ function maybeShowWeeklyRank() {
       resetCamera();
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('main-app').style.display = 'none';
+      if (typeof window._prefillSavedLogin === 'function') window._prefillSavedLogin();
+      if (typeof window._stopPusheen === 'function') window._stopPusheen();
     }
   });
 </script>
@@ -3377,6 +3400,10 @@ function maybeShowWeeklyRank() {
   const hintBtn = document.getElementById('pusheen-hint-btn');
   const comicText = document.getElementById('pusheen-comic-text');
   let autoHideTimer = null;
+  let spriteTimer = null;
+  let initialShowTimer = null;
+  let started = false;
+  hintBtn.classList.add('hidden'); // ẩn nút ? cho tới khi vào form chính
 
   // Danh sách câu thoại với trọng số (weight)
   // weight cao = xuất hiện nhiều hơn
@@ -3411,11 +3438,18 @@ function maybeShowWeeklyRank() {
     return messages[0].html;
   }
 
-  // Sprite animation loop
-  setInterval(() => {
-    fi = (fi + 1) % frames.length;
-    sprite.src = frames[fi];
-  }, 120);
+  function startSpriteLoop() {
+    if (spriteTimer) return;
+    spriteTimer = setInterval(() => {
+      fi = (fi + 1) % frames.length;
+      sprite.src = frames[fi];
+    }, 120);
+  }
+
+  function stopSpriteLoop() {
+    clearInterval(spriteTimer);
+    spriteTimer = null;
+  }
 
   function showSticker() {
     // Chọn câu thoại random có trọng số
@@ -3437,17 +3471,46 @@ function maybeShowWeeklyRank() {
     wrap.classList.add('hide');
     // Show hint button after transition ends (~0.5s)
     setTimeout(() => {
-      hintBtn.classList.remove('hidden');
+      if (started) hintBtn.classList.remove('hidden');
     }, 600);
   }
 
   // Click ? button to show sticker
   hintBtn.addEventListener('click', showSticker);
 
-  // Slide up after page load
-  setTimeout(() => {
-    showSticker();
-  }, 1200);
+  // ===== Điều khiển bật/tắt theo màn hình (chỉ chạy ở form chính) =====
+  window._startPusheen = function() {
+    if (started) return; // tránh khởi động lại nhiều lần khi vẫn đang ở form chính
+    started = true;
+    startSpriteLoop();
+    clearTimeout(initialShowTimer);
+    initialShowTimer = setTimeout(() => {
+      showSticker();
+    }, 1200);
+  };
+
+  window._stopPusheen = function() {
+    started = false;
+    stopSpriteLoop();
+    clearTimeout(autoHideTimer);
+    clearTimeout(initialShowTimer);
+    wrap.classList.remove('visible');
+    wrap.classList.add('hide');
+    hintBtn.classList.add('hidden');
+  };
+
+  // Tạm ẩn khi mở modal boost (nâng cấp gói) nhưng vẫn giữ trạng thái "đã start"
+  window._pauseSticker = function() {
+    clearTimeout(autoHideTimer);
+    wrap.classList.remove('visible');
+    wrap.classList.add('hide');
+    hintBtn.classList.add('hidden');
+  };
+
+  window._resumeSticker = function() {
+    if (!started) return; // chỉ resume nếu đang ở form chính
+    hintBtn.classList.remove('hidden');
+  };
 })();
 </script>
 </body>
